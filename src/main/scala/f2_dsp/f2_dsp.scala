@@ -30,6 +30,7 @@ class laneioanalog extends Bundle {
      val tx_n = Analog(1.W)  
 }
 
+
 class f2_dsp_io(
         val rxinputn   : Int=9, 
         val n          : Int=16, 
@@ -38,7 +39,8 @@ class f2_dsp_io(
         val users      : Int=4,
         val numserdes  : Int=6, 
         val todspios   : Int=4,
-        val fromdspios : Int=4
+        val fromdspios : Int=4,
+        val progdelay  : Int=64
     ) extends Bundle {
     val iptr_A               = Input(Vec(antennas,DspComplex(SInt(rxinputn.W), SInt(rxinputn.W))))
     val decimator_clocks     = new f2_decimator_clocks    
@@ -69,6 +71,8 @@ class f2_dsp_io(
     val serdes_to_dsp_address= Vec(todspios,Input(UInt(log2Ceil(numserdes).W)))  
     val to_serdes_mode       = Vec(numserdes,Input(UInt(2.W))) //Off/On/Scan
     val to_dsp_mode          = Vec(todspios,Input(UInt(2.W))) //Off/on/scan
+    val rx_path_delays     = Input(Vec(antennas, Vec(users,UInt(log2Ceil(progdelay).W))))
+    val neighbour_delays   = Input(Vec(todspios, Vec(users,UInt(log2Ceil(progdelay).W))))
 
 }
 
@@ -81,7 +85,8 @@ class f2_dsp (
         fifodepth  : Int=128, 
         numserdes  : Int=6,
         todspios   : Int=4,
-        fromdspios : Int=1
+        fromdspios : Int=1,
+        progdelay  : Int=64
     ) extends Module {
     val io = IO( 
         new f2_dsp_io(
@@ -92,10 +97,14 @@ class f2_dsp (
             users      = users,
             numserdes  = numserdes, 
             todspios   = todspios,
-            fromdspios = fromdspios
+            fromdspios = fromdspios,
+            progdelay = progdelay
         )
     )
-    val iozerovec=VecInit(Seq.fill(4)(DspComplex.wire(0.S(n.W), 0.S(n.W))))
+    val ztest=0.U.asTypeOf(DspComplex(SInt(n.W),SInt(n.W)))
+    val iozerovec=0.U.asTypeOf(Vec(4,DspComplex(SInt(n.W),SInt(n.W))))
+    //val iozerovec=VecInit(Seq.fill(4)(DspComplex.wire(0.S(n.W), 0.S(n.W))))
+    //val iozerovec=VecInit(Seq.fill(4)(ztest))
 
     //-The RX:s
     // Vec is required to do runtime adressing of an array i.e. Seq is not hardware structure
@@ -103,7 +112,6 @@ class f2_dsp (
                                             users=users, fifodepth=fifodepth, neighbours=todspios)).io
  
     //Map io inputs, name based
-    //rxdsp<>io
     rxdsp.iptr_A             :=io.iptr_A             
     rxdsp.decimator_clocks   :=io.decimator_clocks   
     rxdsp.decimator_controls :=io.decimator_controls 
@@ -122,6 +130,8 @@ class f2_dsp (
     rxdsp.adc_lut_write_addr :=io.adc_lut_write_addr 
     rxdsp.adc_lut_write_vals :=io.adc_lut_write_vals 
     rxdsp.adc_lut_write_en   :=io.adc_lut_write_en   
+    rxdsp.rx_path_delays     :=io.rx_path_delays   
+    rxdsp.neighbour_delays   :=io.neighbour_delays 
 
     val switchbox = Module ( 
         new f2_lane_switch (
