@@ -14,6 +14,7 @@ import hbwif._
 import f2_lane_switch._
 import f2_cm_serdes_lane._
 import f2_rx_dsp._
+import f2_serdes_test._
 
 class laneioscan extends Bundle {
      val scanIn     = Input(Bool())  
@@ -41,7 +42,8 @@ class f2_dsp_io(
         val todspios           : Int=4,
         val fromdspios         : Int=4,
         val progdelay          : Int=64,
-        val serdestestmemsize  : Int=64
+        val neighbours         : Int=4,
+        val serdestestmemsize  : Int=scala.math.pow(2,13).toInt
     ) extends Bundle {
     val iptr_A                  = Input(Vec(antennas,DspComplex(SInt(rxinputn.W), SInt(rxinputn.W))))
     val decimator_clocks        = new f2_decimator_clocks    
@@ -68,16 +70,14 @@ class f2_dsp_io(
     val laneReset               = Output(Vec(numserdes,Bool()))
     val laneanalog              = Vec(numserdes,new laneioanalog())
     val from_serdes_scan        = Vec(numserdes,Flipped(DecoupledIO(new iofifosigs(n=n))))
+    val from_dsp_scan           = Vec(numserdes,Flipped(DecoupledIO(new iofifosigs(n=n))))
     val dsp_to_serdes_address   = Vec(numserdes,Input(UInt(log2Ceil(fromdspios).W))) 
     val serdes_to_dsp_address   = Vec(todspios,Input(UInt(log2Ceil(numserdes).W)))  
     val to_serdes_mode          = Vec(numserdes,Input(UInt(2.W))) //Off/On/Scan
     val to_dsp_mode             = Vec(todspios,Input(UInt(2.W))) //Off/on/scan
     val rx_path_delays          = Input(Vec(antennas, Vec(users,UInt(log2Ceil(progdelay).W))))
-    val neighbour_delays        = Input(Vec(todspios, Vec(users,UInt(log2Ceil(progdelay).W))))
-    val serdes_testmem_mode     = Input(UInt(2.W))
-    val serdes_testmem_address  = Input(UInt(log2Ceil(serdestestmemsize).W))
-    val serdes_testmem_read     = Input(Bool())
-    val serdes_testmem_write    = Input(Bool())
+    val neighbour_delays        = Input(Vec(neighbours, Vec(users,UInt(log2Ceil(progdelay).W))))
+    val serdestest_scan         = new serdes_test_scan_ios(n=n,users=users,memsize=serdestestmemsize)
 }
 
 class f2_dsp (
@@ -88,21 +88,24 @@ class f2_dsp (
         gainbits   : Int=10, 
         fifodepth  : Int=128, 
         numserdes  : Int=6,
-        todspios   : Int=4,
-        fromdspios : Int=1,
-        progdelay  : Int=64
+        todspios   : Int=5,
+        fromdspios : Int=2,
+        neighbours : Int=4,
+        progdelay  : Int=64,
+        serdestestmemsize : Int=scala.math.pow(2,13).toInt
     ) extends Module {
     val io = IO( 
         new f2_dsp_io(
-            rxinputn   = rxinputn, 
-            n          = n, 
-            antennas   = antennas, 
-            gainbits   = gainbits, 
-            users      = users,
-            numserdes  = numserdes, 
-            todspios   = todspios,
-            fromdspios = fromdspios,
-            progdelay = progdelay
+            rxinputn         = rxinputn,
+            n                = n,
+            antennas         = antennas,
+            gainbits         = gainbits,
+            users            = users,
+            numserdes        = numserdes,
+            todspios         = todspios,
+            fromdspios       = fromdspios,
+            progdelay        = progdelay,
+            serdestestmemsize=serdestestmemsize
         )
     )
     //val z = new usersigzeros(n=n, users=users)
@@ -116,9 +119,9 @@ class f2_dsp (
     //-The RX:s
     // Vec is required to do runtime adressing of an array i.e. Seq is not hardware structure
     val rxdsp  = Module ( new  f2_rx_dsp (inputn=rxinputn, n=n, antennas=antennas, 
-                                            users=users, fifodepth=fifodepth, neighbours=todspios)).io
+                                            users=users, fifodepth=fifodepth, neighbours=neighbours)).io
  
-    //Map io inputs, name based
+    //Map io inputs
     rxdsp.iptr_A             :=io.iptr_A             
     rxdsp.decimator_clocks   :=io.decimator_clocks   
     rxdsp.decimator_controls :=io.decimator_controls 
@@ -140,6 +143,7 @@ class f2_dsp (
     rxdsp.rx_path_delays     :=io.rx_path_delays   
     rxdsp.neighbour_delays   :=io.neighbour_delays 
 
+
     val switchbox = Module ( 
         new f2_lane_switch (
             n=n, 
@@ -154,38 +158,42 @@ class f2_dsp (
     val lanes  = Seq.fill(numserdes){ Module ( 
         new  f2_cm_serdes_lane ( () => new iofifosigs(n=n))).io
     }
+    
+    val serdestest  = Module ( new  f2_serdes_test(n=n,users=users,memsize=serdestestmemsize)).io
+   // Map serdestest IOs
+   serdestest.scan<>io.serdestest_scan   
 
    //Switchbox controls
    switchbox.from_serdes_scan     <> io.from_serdes_scan     
+   switchbox.from_dsp_scan        <> io.from_dsp_scan     
    switchbox.dsp_to_serdes_address<> io.dsp_to_serdes_address
    switchbox.serdes_to_dsp_address<> io.serdes_to_dsp_address
    switchbox.to_serdes_mode       <> io.to_serdes_mode       
    switchbox.to_dsp_mode          <> io.to_dsp_mode          
+   
    //Connect RX DSP to switchbox   
    rxdsp.ofifo<>switchbox.from_dsp(0)
-   rxdsp.iptr_fifo<>switchbox.to_dsp
+   (rxdsp.iptr_fifo.take(neighbours),switchbox.to_dsp.take(neighbours)).zipped.map(_<>_)
+   
+   // Test input for memory
+   serdestest.to_serdes<>switchbox.from_dsp(1)
+   serdestest.from_serdes<>switchbox.to_dsp(neighbours)
+
+   //Chenck clocking
    rxdsp.clock_infifo_enq.map(_<>io.clock_symrate)
    rxdsp.clock_outfifo_deq<>io.clock_symratex4
+    
    //Connect TX DSP to switchbox
    //rxdsp.ofifo<>switchbox.from_dsp(0)
    
    //Connect switchbox to SerDes
    (lanes,switchbox.to_serdes).zipped.map(_.data.tx<>_)
    (lanes,switchbox.from_serdes).zipped.map(_.data.rx<>_)
-   
-   // Need a memory with write from scan, read to scan, and 
-   // write from serdes, read from serdes (circular
-   //val to_serdes_test_mem   = new iofifosigs
-   //val from_serdes_test_mem = new iofifosigs
-   //val serdes_test_mem_addr = UInt(log2Ceil(serdestestmemsize))
-   //val serdes_testmem       = withClock(io.symrate4x)Mem(scala.math.pow(2,9).toInt,new iofifosigs)
-   
+
+
+
    //TODO: Write a mechanism to control the READY signal for rx_dsp output fifo
    // Can ready be a clock?
-
-   //Connect SerDes Memory to zero for now
-   switchbox.from_dsp_memory.map(_.bits.data:=iofifozero)
-   switchbox.from_dsp_memory.map(_.valid:=1.U)
 
    //Connect other lane IO's
    (lanes,io.lanecontrol).zipped.map(_.control<>_)
