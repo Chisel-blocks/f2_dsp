@@ -42,6 +42,7 @@ class f2_dsp_io(
         val todspios           : Int=4,
         val fromdspios         : Int=4,
         val progdelay          : Int=64,
+        val finedelay          : Int=32,
         val neighbours         : Int=4,
         val serdestestmemsize  : Int=scala.math.pow(2,13).toInt
     ) extends Bundle {
@@ -75,8 +76,9 @@ class f2_dsp_io(
     val serdes_to_dsp_address   = Vec(todspios,Input(UInt(log2Ceil(numserdes).W)))  
     val to_serdes_mode          = Vec(numserdes,Input(UInt(2.W))) //Off/On/Scan
     val to_dsp_mode             = Vec(todspios,Input(UInt(2.W))) //Off/on/scan
-    val rx_path_delays          = Input(Vec(antennas, Vec(users,UInt(log2Ceil(progdelay).W))))
-    val neighbour_delays        = Input(Vec(neighbours, Vec(users,UInt(log2Ceil(progdelay).W))))
+    val rx_user_delays          = Input(Vec(antennas, Vec(users,UInt(log2Ceil(progdelay).W))))
+    val rx_fine_delays          = Input(Vec(antennas, UInt(log2Ceil(progdelay).W)))
+    val neighbour_delays        = Input(Vec(neighbours, Vec(users,UInt(log2Ceil(finedelay).W))))
     val serdestest_scan         = new serdes_test_scan_ios(n=n,users=users,memsize=serdestestmemsize)
 }
 
@@ -92,6 +94,7 @@ class f2_dsp (
         fromdspios : Int=2,
         neighbours : Int=4,
         progdelay  : Int=64,
+        finedelay  : Int=32,
         serdestestmemsize : Int=scala.math.pow(2,13).toInt
     ) extends Module {
     val io = IO( 
@@ -119,7 +122,9 @@ class f2_dsp (
     //-The RX:s
     // Vec is required to do runtime adressing of an array i.e. Seq is not hardware structure
     val rxdsp  = Module ( new  f2_rx_dsp (inputn=rxinputn, n=n, antennas=antennas, 
-                                            users=users, fifodepth=fifodepth, neighbours=neighbours)).io
+                                            users=users, fifodepth=fifodepth,
+                                            progdelay=progdelay,finedelay=finedelay, 
+                                            neighbours=neighbours)).io
  
     //Map io inputs
     rxdsp.iptr_A             :=io.iptr_A             
@@ -140,7 +145,8 @@ class f2_dsp (
     rxdsp.adc_lut_write_addr :=io.adc_lut_write_addr 
     rxdsp.adc_lut_write_vals :=io.adc_lut_write_vals 
     rxdsp.adc_lut_write_en   :=io.adc_lut_write_en   
-    rxdsp.rx_path_delays     :=io.rx_path_delays   
+    rxdsp.rx_user_delays     :=io.rx_user_delays   
+    rxdsp.rx_fine_delays     :=io.rx_fine_delays   
     rxdsp.neighbour_delays   :=io.neighbour_delays 
 
 
