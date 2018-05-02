@@ -77,8 +77,8 @@ class f2_dsp_io(
     val to_serdes_mode          = Vec(numserdes,Input(UInt(2.W))) //Off/On/Scan
     val to_dsp_mode             = Vec(todspios,Input(UInt(2.W))) //Off/on/scan
     val rx_user_delays          = Input(Vec(antennas, Vec(users,UInt(log2Ceil(progdelay).W))))
-    val rx_fine_delays          = Input(Vec(antennas, UInt(log2Ceil(progdelay).W)))
-    val neighbour_delays        = Input(Vec(neighbours, Vec(users,UInt(log2Ceil(finedelay).W))))
+    val rx_fine_delays          = Input(Vec(antennas, UInt(log2Ceil(finedelay).W)))
+    val neighbour_delays        = Input(Vec(neighbours, Vec(users,UInt(log2Ceil(progdelay).W))))
     val serdestest_scan         = new serdes_test_scan_ios(n=n,users=users,memsize=serdestestmemsize)
 }
 
