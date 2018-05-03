@@ -38,7 +38,7 @@ class f2_dsp_io(
         val antennas           : Int=4, 
         val gainbits           : Int=10, 
         val users              : Int=4,
-        val numserdes          : Int=6, 
+        val numserdes          : Int=2, 
         val todspios           : Int=4,
         val fromdspios         : Int=4,
         val progdelay          : Int=64,
