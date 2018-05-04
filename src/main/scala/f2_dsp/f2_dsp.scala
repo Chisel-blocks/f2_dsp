@@ -210,7 +210,7 @@ class f2_dsp (
 }
 //This gives you verilog
 object f2_dsp extends App {
-  chisel3.Driver.execute(args, () => new f2_dsp(rxinputn=9, n=16, antennas=4, users=4, fifodepth=128, numserdes=6 ))
+  chisel3.Driver.execute(args, () => new f2_dsp(rxinputn=9, n=16, antennas=4, users=4, fifodepth=128, numserdes=2 ))
 }
 
 
