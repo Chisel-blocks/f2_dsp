@@ -41,6 +41,7 @@ class f2_dsp_io(
         val antennas           : Int=4,
         val gainbits           : Int=10,
         val txweightbits       : Int=10,
+        val rxweightbits       : Int=10,
         val users              : Int=4,
         val numserdes          : Int=2,
         val progdelay          : Int=64,
@@ -80,6 +81,7 @@ class f2_dsp_io(
     val to_dsp_mode             = Vec(neighbours+2,Input(UInt(2.W))) //Off/on/scan
     val rx_user_delays          = Input(Vec(antennas, Vec(users,UInt(log2Ceil(progdelay).W))))
     val rx_fine_delays          = Input(Vec(antennas, UInt(log2Ceil(finedelay).W)))
+    val rx_user_weights         = Input(Vec(antennas,Vec(users,DspComplex(SInt(rxweightbits.W),SInt(rxweightbits.W)))))
     val neighbour_delays        = Input(Vec(neighbours, Vec(users,UInt(log2Ceil(progdelay).W))))
     val serdestest_scan         = new serdes_test_scan_ios(n=n,users=users,memsize=serdestestmemsize)
     val reset_dacfifo           = Input(Bool())
@@ -167,6 +169,7 @@ class f2_dsp (
     rxdsp.adc_lut_write_en   :=io.adc_lut_write_en
     rxdsp.rx_user_delays     :=io.rx_user_delays
     rxdsp.rx_fine_delays     :=io.rx_fine_delays
+    rxdsp.rx_user_weights    :=io.rx_user_weights
     rxdsp.neighbour_delays   :=io.neighbour_delays
     //Tx
     txdsp.interpolator_clocks   <> io.interpolator_clocks
