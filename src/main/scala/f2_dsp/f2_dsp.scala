@@ -16,6 +16,7 @@ import f2_lane_switch._
 import f2_cm_serdes_lane._
 import f2_rx_dsp._
 import f2_tx_dsp._
+import f2_tx_path._
 import f2_serdes_test._
 
 class laneioscan extends Bundle {
@@ -37,6 +38,8 @@ class laneioanalog extends Bundle {
 class f2_dsp_io(
         val rxinputn           : Int=9,
         val txoutputn          : Int=9,
+        val thermo             : Int=5,
+        val bin                : Int=4,
         val n                  : Int=16,
         val antennas           : Int=4,
         val gainbits           : Int=10,
@@ -50,6 +53,7 @@ class f2_dsp_io(
         val serdestestmemsize  : Int=scala.math.pow(2,13).toInt
     ) extends Bundle {
     val iptr_A                  = Input(Vec(antennas,DspComplex(SInt(rxinputn.W), SInt(rxinputn.W))))
+    val Z                       = Output(Vec(antennas,new dac_io(thermo=thermo,bin=bin)))
     val decimator_clocks        = new f2_decimator_clocks
     val decimator_controls      = Vec(antennas,new f2_decimator_controls(gainbits=10))
     val adc_clocks              = Input(Vec(antennas,Clock()))
@@ -83,7 +87,7 @@ class f2_dsp_io(
     val rx_fine_delays          = Input(Vec(antennas, UInt(log2Ceil(finedelay).W)))
     val rx_user_weights         = Input(Vec(antennas,Vec(users,DspComplex(SInt(rxweightbits.W),SInt(rxweightbits.W)))))
     val neighbour_delays        = Input(Vec(neighbours, Vec(users,UInt(log2Ceil(progdelay).W))))
-    val serdestest_scan         = new serdes_test_scan_ios(n=n,users=users,memsize=serdestestmemsize)
+    val serdestest_scan         = new serdes_test_scan_ios(proto=new iofifosigs(n=n,users=users),memsize=serdestestmemsize)
     val reset_dacfifo           = Input(Bool())
     val user_spread_mode        = Input(UInt(3.W))
     val user_sum_mode           = Input(Vec(antennas,UInt(3.W)))
@@ -104,6 +108,8 @@ class f2_dsp_io(
 class f2_dsp (
         rxinputn   : Int=9,
         txoutputn  : Int=9,
+        thermo     : Int=5,
+        bin        : Int=4,
         n          : Int=16,
         antennas   : Int=4,
         users      : Int=4,
@@ -120,6 +126,8 @@ class f2_dsp (
         new f2_dsp_io(
             rxinputn         = rxinputn,
             txoutputn        = txoutputn,
+            thermo           = thermo,
+            bin              = bin,
             n                = n,
             antennas         = antennas,
             gainbits         = gainbits,
@@ -186,6 +194,7 @@ class f2_dsp (
     txdsp.dac_lut_write_vals <> io.dac_lut_write_vals
     txdsp.dac_lut_write_en   <> io.dac_lut_write_en
     txdsp.optr_neighbours    <> io.optr_neighbours
+    txdsp.Z                  <> io.Z
     txdsp.tx_user_delays     := io.tx_user_delays
     txdsp.tx_fine_delays     := io.tx_fine_delays
     txdsp.tx_user_weights    := io.tx_user_weights
@@ -204,8 +213,8 @@ class f2_dsp (
     val lanes  = Seq.fill(numserdes){ Module (
         new  f2_cm_serdes_lane ( () => new iofifosigs(n=n))).io
     }
-
-    val serdestest  = Module ( new  f2_serdes_test(n=n,users=users,memsize=serdestestmemsize)).io
+    val proto=new iofifosigs(n=n,users=users)
+    val serdestest  = Module ( new  f2_serdes_test(proto=proto,n=n,users=users,memsize=serdestestmemsize)).io
    // Map serdestest IOs
    serdestest.scan<>io.serdestest_scan
 
@@ -246,7 +255,7 @@ class f2_dsp (
 }
 //This gives you verilog
 object f2_dsp extends App {
-  chisel3.Driver.execute(args, () => new f2_dsp(rxinputn=9, n=16, antennas=4, users=4, fifodepth=128, numserdes=2, serdestestmemsize=scala.math.pow(2,13).toInt ))
+  chisel3.Driver.execute(args, () => new f2_dsp(rxinputn=9, bin=4,thermo=5, n=16, antennas=4, users=4, fifodepth=128, numserdes=2, serdestestmemsize=scala.math.pow(2,13).toInt ))
 }
 
 
