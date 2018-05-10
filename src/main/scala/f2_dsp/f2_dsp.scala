@@ -16,12 +16,13 @@ import f2_cm_serdes_lane._
 import f2_rx_dsp._
 import f2_serdes_test._
 
-class laneioscan extends Bundle {
-     val scanIn     = Input(Bool())  
-     val scanOut    = Output(Bool())
-     val scanEnable = Input(Bool())
-     val scanCommit = Input(Bool())
-     val scanClock  = Input(Clock())
+class lane_clock_and_reset extends Bundle {
+    val clockRef                = Input(Clock())
+    val asyncResetIn            = Input(Bool())
+    val txClock                 = Output(Clock())
+    val txReset                 = Output(Bool())
+    val rxClock                 = Output(Clock())
+    val rxReset                 = Output(Bool())
 }
 
 class laneioanalog extends Bundle {
@@ -64,11 +65,7 @@ class f2_dsp_io(
     val adc_lut_write_addr      = Input(UInt(rxinputn.W))
     val adc_lut_write_vals      = Input(Vec(antennas,DspComplex(SInt(rxinputn.W), SInt(rxinputn.W))))
     val adc_lut_write_en        = Input(Bool())
-    val lanecontrol             = Vec(numserdes,new laneioscan())
-    val clockRef                = Input(Vec(numserdes,Clock()))
-    val asyncResetIn            = Input(Vec(numserdes,Bool()))
-    val laneClock               = Output(Vec(numserdes,Clock()))
-    val laneReset               = Output(Vec(numserdes,Bool()))
+    val lane_clkrst             = Vec(numserdes,new lane_clock_and_reset())
     val laneanalog              = Vec(numserdes,new laneioanalog())
     val from_serdes_scan        = Vec(numserdes,Flipped(DecoupledIO(new iofifosigs(n=n))))
     val from_dsp_scan           = Vec(numserdes,Flipped(DecoupledIO(new iofifosigs(n=n))))
@@ -96,7 +93,7 @@ class f2_dsp (
         progdelay  : Int=64,
         finedelay  : Int=32,
         serdestestmemsize : Int=scala.math.pow(2,13).toInt
-    ) extends Module {
+    ) extends MultiIOModule {
     val io = IO( 
         new f2_dsp_io(
             rxinputn         = rxinputn,
@@ -162,48 +159,63 @@ class f2_dsp (
     implicit val b=BertConfig()
     implicit val m=PatternMemConfig()
     val lanes  = Seq.fill(numserdes){ Module ( 
-        new  f2_cm_serdes_lane ( () => new iofifosigs(n=n))).io
+        new  f2_cm_serdes_lane ( () => new iofifosigs(n=n)))
     }
+
+    //Connect lanei control IO's
+    private def iomap[T <: Data] = { x:T => IO(chiselTypeOf(x)).asInstanceOf[T] }
+    val lane_ssio         = lanes.map(_.ssio.map(iomap))
+    val lane_encoderio    =lanes.map(_.encoderio.map(iomap))
+    val lane_decoderio    =lanes.map(_.decoderio.map(iomap))
+    val lane_packetizerio =lanes.map(_.packetizerio.map(iomap))
+    val lane_debugio      =lanes.map(_.debugio.map(_.map(iomap)))
+    // .get is used because the io's are Options, not Seq:w
+    (lanes,lane_ssio).zipped.map(_.ssio.get<>_.get)
+    (lanes,lane_decoderio).zipped.map(_.decoderio.get<>_.get)
+    (lanes,lane_packetizerio).zipped.map(_.packetizerio.get<>_.get)
+    (lanes,lane_debugio).zipped.map{ case(l,d) => (l.debugio,d).zipped.map(_.get<>_.get)}
+    (lanes,io.lane_clkrst).zipped.map(_.io.asyncResetIn<>_.asyncResetIn)
+    (lanes,io.lane_clkrst).zipped.map(_.io.clockRef<>_.clockRef)
+    (lanes,io.lane_clkrst).zipped.map(_.io.txClock<>_.txClock)
+    (lanes,io.lane_clkrst).zipped.map(_.io.txReset<>_.txReset)
+    (lanes,io.lane_clkrst).zipped.map(_.io.rxClock<>_.rxClock)
+    (lanes,io.lane_clkrst).zipped.map(_.io.rxReset<>_.rxReset)
     
     val serdestest  = Module ( new  f2_serdes_test(n=n,users=users,memsize=serdestestmemsize)).io
-   // Map serdestest IOs
-   serdestest.scan<>io.serdestest_scan   
+     // Map serdestest IOs
+     serdestest.scan<>io.serdestest_scan   
+     //Switchbox controls
+     switchbox.from_serdes_scan     <> io.from_serdes_scan     
+     switchbox.from_dsp_scan        <> io.from_dsp_scan     
+     switchbox.dsp_to_serdes_address<> io.dsp_to_serdes_address
+     switchbox.serdes_to_dsp_address<> io.serdes_to_dsp_address
+     switchbox.to_serdes_mode       <> io.to_serdes_mode       
+     switchbox.to_dsp_mode          <> io.to_dsp_mode          
+     
+     //Connect RX DSP to switchbox   
+     rxdsp.ofifo<>switchbox.from_dsp(0)
+     (rxdsp.iptr_fifo.take(neighbours),switchbox.to_dsp.take(neighbours)).zipped.map(_<>_)
+     
+     // Test input for memory
+     serdestest.to_serdes<>switchbox.from_dsp(1)
+     serdestest.from_serdes<>switchbox.to_dsp(neighbours)
 
-   //Switchbox controls
-   switchbox.from_serdes_scan     <> io.from_serdes_scan     
-   switchbox.from_dsp_scan        <> io.from_dsp_scan     
-   switchbox.dsp_to_serdes_address<> io.dsp_to_serdes_address
-   switchbox.serdes_to_dsp_address<> io.serdes_to_dsp_address
-   switchbox.to_serdes_mode       <> io.to_serdes_mode       
-   switchbox.to_dsp_mode          <> io.to_dsp_mode          
-   
-   //Connect RX DSP to switchbox   
-   rxdsp.ofifo<>switchbox.from_dsp(0)
-   (rxdsp.iptr_fifo.take(neighbours),switchbox.to_dsp.take(neighbours)).zipped.map(_<>_)
-   
-   // Test input for memory
-   serdestest.to_serdes<>switchbox.from_dsp(1)
-   serdestest.from_serdes<>switchbox.to_dsp(neighbours)
-
-   //Chenck clocking
-   rxdsp.clock_infifo_enq.map(_<>io.clock_symrate)
-   rxdsp.clock_outfifo_deq<>io.clock_symratex4
-    
-   //Connect TX DSP to switchbox
-   //rxdsp.ofifo<>switchbox.from_dsp(0)
-   
-   //Connect switchbox to SerDes
-   (lanes,switchbox.to_serdes).zipped.map(_.data.tx<>_)
-   (lanes,switchbox.from_serdes).zipped.map(_.data.rx<>_)
+     //Chenck clocking
+     rxdsp.clock_infifo_enq.map(_<>io.clock_symrate)
+     rxdsp.clock_outfifo_deq<>io.clock_symratex4
+      
+     //Connect TX DSP to switchbox
+     //rxdsp.ofifo<>switchbox.from_dsp(0)
+     
+     //Connect switchbox to SerDes
+     (lanes,switchbox.to_serdes).zipped.map(_.io.data.tx<>_)
+     (lanes,switchbox.from_serdes).zipped.map(_.io.data.rx<>_)
 
 
 
    //TODO: Write a mechanism to control the READY signal for rx_dsp output fifo
    // Can ready be a clock?
 
-   //Connect other lane IO's
-   (lanes,io.asyncResetIn).zipped.map(_.asyncResetIn<>_)
-   (lanes,io.clockRef).zipped.map(_.clockRef<>_)
 }
 //This gives you verilog
 object f2_dsp extends App {
