@@ -202,9 +202,6 @@ class f2_dsp (
    // Can ready be a clock?
 
    //Connect other lane IO's
-   (lanes,io.lanecontrol).zipped.map(_.control<>_)
-   (lanes,io.laneReset).zipped.map(_.laneReset<>_)
-   (lanes,io.laneClock).zipped.map(_.laneClock<>_)
    (lanes,io.asyncResetIn).zipped.map(_.asyncResetIn<>_)
    (lanes,io.clockRef).zipped.map(_.clockRef<>_)
 }
