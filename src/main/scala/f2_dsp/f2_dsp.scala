@@ -19,12 +19,13 @@ import f2_tx_dsp._
 import f2_tx_path._
 import f2_serdes_test._
 
-class laneioscan extends Bundle {
-     val scanIn     = Input(Bool())
-     val scanOut    = Output(Bool())
-     val scanEnable = Input(Bool())
-     val scanCommit = Input(Bool())
-     val scanClock  = Input(Clock())
+class lane_clock_and_reset extends Bundle {
+    val clockRef                = Input(Clock())
+    val asyncResetIn            = Input(Bool())
+    val txClock                 = Output(Clock())
+    val txReset                 = Output(Bool())
+    val rxClock                 = Output(Clock())
+    val rxReset                 = Output(Bool())
 }
 
 class laneioanalog extends Bundle {
@@ -71,11 +72,7 @@ class f2_dsp_io(
     val adc_lut_write_addr      = Input(UInt(rxinputn.W))
     val adc_lut_write_vals      = Input(Vec(antennas,DspComplex(SInt(rxinputn.W), SInt(rxinputn.W))))
     val adc_lut_write_en        = Input(Bool())
-    val lanecontrol             = Vec(numserdes,new laneioscan())
-    val clockRef                = Input(Vec(numserdes,Clock()))
-    val asyncResetIn            = Input(Vec(numserdes,Bool()))
-    val laneClock               = Output(Vec(numserdes,Clock()))
-    val laneReset               = Output(Vec(numserdes,Bool()))
+    val lane_clkrst             = Vec(numserdes,new lane_clock_and_reset())
     val laneanalog              = Vec(numserdes,new laneioanalog())
     val from_serdes_scan        = Vec(numserdes,Flipped(DecoupledIO(new iofifosigs(n=n))))
     val from_dsp_scan           = Vec(numserdes,Flipped(DecoupledIO(new iofifosigs(n=n))))
@@ -121,8 +118,8 @@ class f2_dsp (
         progdelay  : Int=64,
         finedelay  : Int=32,
         serdestestmemsize : Int=scala.math.pow(2,13).toInt
-    ) extends Module {
-    val io = IO(
+    ) extends MultiIOModule {
+    val io = IO( 
         new f2_dsp_io(
             rxinputn         = rxinputn,
             txoutputn        = txoutputn,
@@ -234,7 +231,7 @@ class f2_dsp (
    serdestest.to_serdes<>switchbox.from_dsp(neighbours+1)
    serdestest.from_serdes<>switchbox.to_dsp(neighbours+1)
 
-   //Chenck clocking
+   //Check clocking
    rxdsp.clock_infifo_enq.map(_<>io.clock_symrate)
    rxdsp.clock_outfifo_deq<>io.clock_symratex4
 
