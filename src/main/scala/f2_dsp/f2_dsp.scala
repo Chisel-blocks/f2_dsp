@@ -94,7 +94,7 @@ class f2_dsp_io(
     val dac_lut_write_addr      = Input(Vec(antennas,UInt(txoutputn.W)))
     val dac_lut_write_vals      = Input(Vec(antennas,DspComplex(SInt(txoutputn.W), SInt(txoutputn.W))))
     val dac_lut_write_en        = Vec(antennas,Input(Bool()))
-    val optr_neighbours         = Vec(neighbours,DecoupledIO(new iofifosigs(n=n,users=users)))
+    //val optr_neighbours         = Vec(neighbours,DecoupledIO(new iofifosigs(n=n,users=users)))
     val tx_user_delays          = Input(Vec(antennas, Vec(users,UInt(log2Ceil(progdelay).W))))
     val tx_fine_delays          = Input(Vec(antennas,UInt(log2Ceil(finedelay).W)))
     val tx_user_weights         = Input(Vec(antennas,Vec(users,DspComplex(SInt(txweightbits.W), SInt(txweightbits.W)))))
@@ -190,7 +190,7 @@ class f2_dsp (
     txdsp.dac_lut_write_addr <> io.dac_lut_write_addr
     txdsp.dac_lut_write_vals <> io.dac_lut_write_vals
     txdsp.dac_lut_write_en   <> io.dac_lut_write_en
-    txdsp.optr_neighbours    <> io.optr_neighbours
+    //txdsp.optr_neighbours    <> io.optr_neighbours
     txdsp.Z                  <> io.Z
     txdsp.tx_user_delays     := io.tx_user_delays
     txdsp.tx_fine_delays     := io.tx_fine_delays
@@ -208,13 +208,35 @@ class f2_dsp (
     implicit val b=BertConfig()
     implicit val m=PatternMemConfig()
     val lanes  = Seq.fill(numserdes){ Module (
-        new  f2_cm_serdes_lane ( () => new iofifosigs(n=n))).io
+        new  f2_cm_serdes_lane ( () => new iofifosigs(n=n)))
     }
+    
+    private def iomap[T <: Data] = { x:T => IO(chiselTypeOf(x)).asInstanceOf[T] }
+
+    //Connect lane control IO's
+    val lane_ssio         = lanes.map(_.ssio.map(iomap))
+    val lane_encoderio    =lanes.map(_.encoderio.map(iomap))
+    val lane_decoderio    =lanes.map(_.decoderio.map(iomap))
+    val lane_packetizerio =lanes.map(_.packetizerio.map(iomap))
+    val lane_debugio      =lanes.map(_.debugio.map(_.map(iomap)))
+
+    //val lanes_ssiofifo = lanes.map{ lane=> Module(new AsyncQueue( lane_ssio.asTypeOf,depth=2 )).io}
+
+    // .get is used because the io's are Options, not Seq
+    (lanes,lane_ssio).zipped.map(_.ssio.get<>_.get)
+    (lanes,lane_decoderio).zipped.map(_.decoderio.get<>_.get)
+    (lanes,lane_packetizerio).zipped.map(_.packetizerio.get<>_.get)
+    (lanes,lane_debugio).zipped.map{ case(l,d) => (l.debugio,d).zipped.map(_.get<>_.get)}
+    (lanes,io.lane_clkrst).zipped.map(_.io.asyncResetIn<>_.asyncResetIn)
+    (lanes,io.lane_clkrst).zipped.map(_.io.clockRef<>_.clockRef)
+    (lanes,io.lane_clkrst).zipped.map(_.io.txClock<>_.txClock)
+    (lanes,io.lane_clkrst).zipped.map(_.io.txReset<>_.txReset)
+    (lanes,io.lane_clkrst).zipped.map(_.io.rxClock<>_.rxClock)
+    (lanes,io.lane_clkrst).zipped.map(_.io.rxReset<>_.rxReset)
     val proto=new iofifosigs(n=n,users=users)
     val serdestest  = Module ( new  f2_serdes_test(proto=proto,n=n,users=users,memsize=serdestestmemsize)).io
    // Map serdestest IOs
    serdestest.scan<>io.serdestest_scan
-
    //Switchbox controls
    switchbox.from_serdes_scan     <> io.from_serdes_scan
    switchbox.from_dsp_scan        <> io.from_dsp_scan
@@ -240,15 +262,8 @@ class f2_dsp (
    (txdsp.optr_neighbours.take(neighbours),switchbox.from_dsp.slice(1,neighbours+1)).zipped.map(_<>_)
 
    //Connect switchbox to SerDes
-   (lanes,switchbox.to_serdes).zipped.map(_.data.tx<>_)
-   (lanes,switchbox.from_serdes).zipped.map(_.data.rx<>_)
-
-   //Connect other lane IO's
-   (lanes,io.lanecontrol).zipped.map(_.control<>_)
-   (lanes,io.laneReset).zipped.map(_.laneReset<>_)
-   (lanes,io.laneClock).zipped.map(_.laneClock<>_)
-   (lanes,io.asyncResetIn).zipped.map(_.asyncResetIn<>_)
-   (lanes,io.clockRef).zipped.map(_.clockRef<>_)
+   (lanes,switchbox.to_serdes).zipped.map(_.io.data.tx<>_)
+   (lanes,switchbox.from_serdes).zipped.map(_.io.data.rx<>_)
 }
 //This gives you verilog
 object f2_dsp extends App {
