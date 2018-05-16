@@ -215,15 +215,31 @@ class f2_dsp (
 
     //Connect lane control IO's
     val lane_ssio         = lanes.map(_.ssio.map(iomap))
-    val lane_encoderio    =lanes.map(_.encoderio.map(iomap))
-    val lane_decoderio    =lanes.map(_.decoderio.map(iomap))
-    val lane_packetizerio =lanes.map(_.packetizerio.map(iomap))
-    val lane_debugio      =lanes.map(_.debugio.map(_.map(iomap)))
+    val lane_encoderio    = lanes.map(_.encoderio.map(iomap))
+    val lane_decoderio    = lanes.map(_.decoderio.map(iomap))
+    val lane_packetizerio = lanes.map(_.packetizerio.map(iomap))
+    val lane_debugio      = lanes.map(_.debugio.map(_.map(iomap)))
 
-    //val lanes_ssiofifo = lanes.map{ lane=> Module(new AsyncQueue( lane_ssio.asTypeOf,depth=2 )).io}
+    // TODO make this work
+    val lane_ssiofifo = lane_ssio.map { case Some(ssio) =>
+      Module(new AsyncQueue( chiselTypeOf(ssio), depth=2, sync = 3 )).io
+    }
 
     // .get is used because the io's are Options, not Seq
-    (lanes,lane_ssio).zipped.map(_.ssio.get<>_.get)
+    (lanes, lane_ssio, lane_ssiofifo).zipped.foreach { case (lane, ssio, fifo) =>
+      // io <-> fifo <-> lane
+      fifo.io.enq.bits <> ssio.get
+      lane.ssio.get    <> fifo.io.deq.bits
+
+      fifo.io.enq_clock := this.clock // TODO change this
+      fifo.io.enq_reset := this.reset // TODO change this
+      fifo.io.deq_clock := this.clock
+      fifo.io.enq_reset := this.reset
+
+      fifo.io.deq.ready := true.B
+      fifo.io.enq.valid := true.B // TODO check if needed
+      // Can make assertions on enq.ready and deq.valid for simulation
+    }
     (lanes,lane_decoderio).zipped.map(_.decoderio.get<>_.get)
     (lanes,lane_packetizerio).zipped.map(_.packetizerio.get<>_.get)
     (lanes,lane_debugio).zipped.map{ case(l,d) => (l.debugio,d).zipped.map(_.get<>_.get)}
