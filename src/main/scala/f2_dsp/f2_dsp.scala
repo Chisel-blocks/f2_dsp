@@ -228,16 +228,16 @@ class f2_dsp (
     // .get is used because the io's are Options, not Seq
     (lanes, lane_ssio, lane_ssiofifo).zipped.foreach { case (lane, ssio, fifo) =>
       // io <-> fifo <-> lane
-      fifo.io.enq.bits <> ssio.get
-      lane.ssio.get    <> fifo.io.deq.bits
+      ssio.get      <> fifo.enq.bits
+      lane.ssio.get    <> fifo.deq.bits
 
-      fifo.io.enq_clock := this.clock // TODO change this
-      fifo.io.enq_reset := this.reset // TODO change this
-      fifo.io.deq_clock := this.clock
-      fifo.io.enq_reset := this.reset
+      fifo.enq_clock := this.clock // TODO change this
+      fifo.enq_reset := this.reset // TODO change this
+      fifo.deq_clock := this.clock
+      fifo.enq_reset := this.reset
 
-      fifo.io.deq.ready := true.B
-      fifo.io.enq.valid := true.B // TODO check if needed
+      fifo.deq.ready := true.B
+      fifo.enq.valid := true.B // TODO check if needed
       // Can make assertions on enq.ready and deq.valid for simulation
     }
     (lanes,lane_decoderio).zipped.map(_.decoderio.get<>_.get)
