@@ -35,7 +35,6 @@ class laneioanalog extends Bundle {
      val tx_n = Analog(1.W)
 }
 
-
 class f2_dsp_io(
         val rxinputn           : Int=9,
         val txoutputn          : Int=9,
@@ -92,6 +91,7 @@ class f2_dsp_io(
     val dac_clocks              = Input(Vec(antennas,Clock()))
     val dac_data_mode           = Input(Vec(antennas,UInt(3.W)))
     val dac_lut_write_addr      = Input(Vec(antennas,UInt(txoutputn.W)))
+
     val dac_lut_write_vals      = Input(Vec(antennas,DspComplex(SInt(txoutputn.W), SInt(txoutputn.W))))
     val dac_lut_write_en        = Vec(antennas,Input(Bool()))
     //val optr_neighbours         = Vec(neighbours,DecoupledIO(new iofifosigs(n=n,users=users)))
@@ -119,7 +119,7 @@ class f2_dsp (
         finedelay  : Int=32,
         serdestestmemsize : Int=scala.math.pow(2,13).toInt
     ) extends MultiIOModule {
-    val io = IO( 
+    val io = IO(
         new f2_dsp_io(
             rxinputn         = rxinputn,
             txoutputn        = txoutputn,
@@ -210,8 +210,8 @@ class f2_dsp (
     val lanes  = Seq.fill(numserdes){ Module (
         new  f2_cm_serdes_lane ( () => new iofifosigs(n=n)))
     }
-    
-    private def iomap[T <: Data] = { x:T => IO(chiselTypeOf(x)).asInstanceOf[T] }
+
+    private def iomap[T <: Data] = { x:T => IO(chiselTypeOf(x)) }
 
     //Connect lane control IO's
     val lane_ssio         = lanes.map(_.ssio.map(iomap))
@@ -220,25 +220,40 @@ class f2_dsp (
     val lane_packetizerio = lanes.map(_.packetizerio.map(iomap))
     val lane_debugio      = lanes.map(_.debugio.map(_.map(iomap)))
 
-    // TODO make this work
-    val lane_ssiofifo = lane_ssio.map { case Some(ssio) =>
-      Module(new AsyncQueue( chiselTypeOf(ssio), depth=2, sync = 3 )).io
-    }
-
     // .get is used because the io's are Options, not Seq
-    (lanes, lane_ssio, lane_ssiofifo).zipped.foreach { case (lane, ssio, fifo) =>
-      // io <-> fifo <-> lane
-      ssio.get      <> fifo.enq.bits
-      lane.ssio.get    <> fifo.deq.bits
+    (lanes, lane_ssio).zipped.foreach { case (lane, ssio) =>
+      // inputs
+      lane.ssio.get.inputMap.foreach  { case (name, value) =>
+        // ssio -> fifo -> lane
+        val fifo = Module(new AsyncQueue(value.signal, depth = 1, sync = 3)).io
+        fifo.enq.bits := ssio.get.inputMap(name).signal
+        value.signal := fifo.deq.bits
 
-      fifo.enq_clock := this.clock // TODO change this
-      fifo.enq_reset := this.reset // TODO change this
-      fifo.deq_clock := this.clock
-      fifo.enq_reset := this.reset
+        fifo.enq_clock := this.clock // TODO change this
+        fifo.enq_reset := this.reset // TODO change this
+        fifo.deq_clock := this.clock
+        fifo.deq_reset := this.reset
 
-      fifo.deq.ready := true.B
-      fifo.enq.valid := true.B // TODO check if needed
-      // Can make assertions on enq.ready and deq.valid for simulation
+        fifo.deq.ready := true.B
+        fifo.enq.valid := true.B // TODO check if needed
+        // Can make assertions on enq.ready and deq.valid for simulation
+      }
+      // outputs
+      lane.ssio.get.outputMap.foreach { case (name, value) =>
+        // lane -> fifo -> ssio
+        val fifo = Module(new AsyncQueue(value.signal, depth = 1, sync = 3)).io
+        fifo.enq.bits := value.signal
+        ssio.get.outputMap(name).signal := fifo.deq.bits
+
+        fifo.enq_clock := this.clock // TODO change this
+        fifo.enq_reset := this.reset // TODO change this
+        fifo.deq_clock := this.clock
+        fifo.deq_reset := this.reset
+
+        fifo.deq.ready := true.B
+        fifo.enq.valid := true.B // TODO check if needed
+        // Can make assertions on enq.ready and deq.valid for simulation
+      }
     }
     (lanes,lane_decoderio).zipped.map(_.decoderio.get<>_.get)
     (lanes,lane_packetizerio).zipped.map(_.packetizerio.get<>_.get)
