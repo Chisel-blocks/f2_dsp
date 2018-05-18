@@ -22,10 +22,6 @@ import f2_serdes_test._
 class lane_clock_and_reset extends Bundle {
     val clockRef                = Input(Clock())
     val asyncResetIn            = Input(Bool())
-    val txClock                 = Output(Clock())
-    val txReset                 = Output(Bool())
-    val rxClock                 = Output(Clock())
-    val rxReset                 = Output(Bool())
 }
 
 class laneioanalog extends Bundle {
@@ -220,7 +216,7 @@ class f2_dsp (
     val lane_packetizerio = lanes.map(_.packetizerio.map(iomap))
     val lane_debugio      = lanes.map(_.debugio.map(_.map(iomap)))
 
-    // .get is used because the io's are Options, not Seq
+    //ssio
     (lanes, lane_ssio).zipped.foreach { case (lane, ssio) =>
       // inputs
       lane.ssio.get.inputMap.foreach  { case (name, value) =>
@@ -229,10 +225,10 @@ class f2_dsp (
         fifo.enq.bits := ssio.get.inputMap(name).signal
         value.signal := fifo.deq.bits
 
-        fifo.enq_clock := this.clock // TODO change this
-        fifo.enq_reset := this.reset // TODO change this
-        fifo.deq_clock := this.clock
-        fifo.deq_reset := this.reset
+        fifo.enq_clock := clock 
+        fifo.enq_reset := reset 
+        fifo.deq_clock := lane.io.rxClock
+        fifo.deq_reset := lane.io.rxReset
 
         fifo.deq.ready := true.B
         fifo.enq.valid := true.B // TODO check if needed
@@ -245,25 +241,22 @@ class f2_dsp (
         fifo.enq.bits := value.signal
         ssio.get.outputMap(name).signal := fifo.deq.bits
 
-        fifo.enq_clock := this.clock // TODO change this
-        fifo.enq_reset := this.reset // TODO change this
-        fifo.deq_clock := this.clock
-        fifo.deq_reset := this.reset
+        fifo.enq_clock := lane.io.txClock
+        fifo.enq_reset := lane.io.txReset
+        fifo.deq_clock := clock
+        fifo.deq_reset := reset
 
         fifo.deq.ready := true.B
         fifo.enq.valid := true.B // TODO check if needed
         // Can make assertions on enq.ready and deq.valid for simulation
       }
     }
+    // .get is used because the io's are Options, not Seq
     (lanes,lane_decoderio).zipped.map(_.decoderio.get<>_.get)
     (lanes,lane_packetizerio).zipped.map(_.packetizerio.get<>_.get)
     (lanes,lane_debugio).zipped.map{ case(l,d) => (l.debugio,d).zipped.map(_.get<>_.get)}
     (lanes,io.lane_clkrst).zipped.map(_.io.asyncResetIn<>_.asyncResetIn)
     (lanes,io.lane_clkrst).zipped.map(_.io.clockRef<>_.clockRef)
-    (lanes,io.lane_clkrst).zipped.map(_.io.txClock<>_.txClock)
-    (lanes,io.lane_clkrst).zipped.map(_.io.txReset<>_.txReset)
-    (lanes,io.lane_clkrst).zipped.map(_.io.rxClock<>_.rxClock)
-    (lanes,io.lane_clkrst).zipped.map(_.io.rxReset<>_.rxReset)
     val proto=new iofifosigs(n=n,users=users)
     val serdestest  = Module ( new  f2_serdes_test(proto=proto,n=n,users=users,memsize=serdestestmemsize)).io
    // Map serdestest IOs
