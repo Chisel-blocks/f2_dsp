@@ -157,12 +157,15 @@ class f2_dsp (
                                             users=users, fifodepth=fifodepth,
                                             progdelay=progdelay,finedelay=finedelay,
                                             neighbours=neighbours)).io)
-    rxdsp.decimator_clocks.cic3clockslow:=rxclkdiv.clkpn 
-    rxdsp.decimator_clocks.hb1clock_low :=rxclkdiv.clkp2n
-    rxdsp.decimator_clocks.hb2clock_low :=rxclkdiv.clkp4n
-    rxdsp.decimator_clocks.hb3clock_low :=rxclkdiv.clkp8n
-    rxdsp.clock_symrate                 :=rxclkdiv.clkp8n
-    rxdsp.clock_symratex4               :=rxclkdiv.clkp2n
+    rxdsp.decimator_clocks.cic3clockslow:=rxclkdiv.clkpn.asClock 
+    rxdsp.decimator_clocks.hb1clock_low :=rxclkdiv.clkp2n.asClock 
+    rxdsp.decimator_clocks.hb2clock_low :=rxclkdiv.clkp4n.asClock
+    rxdsp.decimator_clocks.hb3clock_low :=rxclkdiv.clkp8n.asClock
+    rxdsp.clock_symrate                 :=rxclkdiv.clkp8n.asClock
+    rxdsp.clock_symratex4               :=rxclkdiv.clkp2n.asClock
+    //Check clocking
+    rxdsp.clock_infifo_enq.map(_<>rxclkdiv.clkp8n.asClock)
+    rxdsp.clock_outfifo_deq<>rxclkdiv.clkp2n.asClock
 
     //For TX, the mster clock is the slowest, faster clocks are formed from the system master clock.
     val txdsp  = withClock(txclkdiv.clkp8n.asClock)(Module ( new  f2_tx_dsp (outputn=rxinputn, n=n, antennas=antennas,
@@ -171,12 +174,11 @@ class f2_dsp (
                                             neighbours=neighbours,weightbits=txweightbits)).io)
     
     txdsp.interpolator_clocks.cic3clockfast   := clock
-    txdsp.interpolator_clocks.hb3clock_high   := txclkdiv.clkpn 
-    txdsp.interpolator_clocks.hb2clock_high   := txclkdiv.clkp2n
-    txdsp.interpolator_clocks.hb1clock_high   := txclkdiv.clkp4n
-    txdsp.interpolator_clocks.clock_symrate   := txclkdiv.clkp8n
-    txdsp.clock_symrate                       := txclkdiv.clkp8n
-    txdsp.clock_outfifo_deq                   := txclkdiv.clkp8n
+    txdsp.interpolator_clocks.hb3clock_high   := txclkdiv.clkpn.asClock 
+    txdsp.interpolator_clocks.hb2clock_high   := txclkdiv.clkp2n.asClock 
+    txdsp.interpolator_clocks.hb1clock_high   := txclkdiv.clkp4n.asClock
+    txdsp.clock_symrate                       := txclkdiv.clkp8n.asClock
+    txdsp.clock_outfifo_deq                   := txclkdiv.clkp8n.asClock
 
     //Map io inputs
     //Rx
@@ -210,7 +212,6 @@ class f2_dsp (
     txdsp.dac_lut_write_addr <> io.dac_lut_write_addr
     txdsp.dac_lut_write_vals <> io.dac_lut_write_vals
     txdsp.dac_lut_write_en   <> io.dac_lut_write_en
-    //txdsp.optr_neighbours    <> io.optr_neighbours
     txdsp.Z                  <> io.Z
     txdsp.tx_user_delays     := io.tx_user_delays
     txdsp.tx_fine_delays     := io.tx_fine_delays
@@ -301,9 +302,6 @@ class f2_dsp (
    serdestest.to_serdes<>switchbox.from_dsp(neighbours+1)
    serdestest.from_serdes<>switchbox.to_dsp(neighbours+1)
 
-   //Check clocking
-   rxdsp.clock_infifo_enq.map(_<>io.clock_symrate)
-   rxdsp.clock_outfifo_deq<>io.clock_symratex4
 
    //Connect TX DSP to switchbox
    txdsp.iptr_A<>switchbox.to_dsp(0)
