@@ -51,7 +51,6 @@ class f2_dsp_io(
     ) extends Bundle {
     val iptr_A                  = Input(Vec(antennas,DspComplex(SInt(rxinputn.W), SInt(rxinputn.W))))
     val Z                       = Output(Vec(antennas,new dac_io(thermo=thermo,bin=bin)))
-    val decimator_clocks        = new f2_decimator_clocks
     val decimator_controls      = Vec(antennas,new f2_decimator_controls(gainbits=10))
     val adc_clocks              = Input(Vec(antennas,Clock()))
     val user_index              = Input(UInt(log2Ceil(users).W)) //W should be log2 of users
@@ -79,7 +78,7 @@ class f2_dsp_io(
     val rx_user_weights         = Input(Vec(antennas,Vec(users,DspComplex(SInt(rxweightbits.W),SInt(rxweightbits.W)))))
     val rx_Ndiv                 = Input(UInt(8.W))
     val rx_reset_clkdiv         = Input(Bool())
-    val rx_clkdiv_shift         = Input(Bool())
+    val rx_clkdiv_shift         = Input(UInt(2.W))
     val neighbour_delays        = Input(Vec(neighbours, Vec(users,UInt(log2Ceil(progdelay).W))))
     val serdestest_scan         = new serdes_test_scan_ios(proto=new iofifosigs(n=n,users=users),memsize=serdestestmemsize)
     val reset_dacfifo           = Input(Bool())
@@ -98,7 +97,7 @@ class f2_dsp_io(
     val tx_user_weights         = Input(Vec(antennas,Vec(users,DspComplex(SInt(txweightbits.W), SInt(txweightbits.W)))))
     val tx_Ndiv                 = Input(UInt(8.W))
     val tx_reset_clkdiv         = Input(Bool())
-    val tx_clkdiv_shift         = Input(Bool())
+    val tx_clkdiv_shift         = Input(UInt(2.W))
     val interpolator_controls   = Vec(antennas,new f2_interpolator_controls(gainbits=10))
 }
 
@@ -153,10 +152,11 @@ class f2_dsp (
 
     // RX:s
     // Vec is required to do runtime adressing of an array i.e. Seq is not hardware structure
-    val rxdsp  = withClock(io.adc_clocks(0))(Module ( new  f2_rx_dsp (inputn=rxinputn, n=n, antennas=antennas,
+    // Clock of the RX is at the highest frequency
+    val rxdsp  = Module ( new  f2_rx_dsp (inputn=rxinputn, n=n, antennas=antennas,
                                             users=users, fifodepth=fifodepth,
                                             progdelay=progdelay,finedelay=finedelay,
-                                            neighbours=neighbours)).io)
+                                            neighbours=neighbours)).io
     rxdsp.decimator_clocks.cic3clockslow:=rxclkdiv.clkpn.asClock 
     rxdsp.decimator_clocks.hb1clock_low :=rxclkdiv.clkp2n.asClock 
     rxdsp.decimator_clocks.hb2clock_low :=rxclkdiv.clkp4n.asClock
