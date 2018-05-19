@@ -18,6 +18,7 @@ import f2_rx_dsp._
 import f2_tx_dsp._
 import f2_tx_path._
 import f2_serdes_test._
+import clkdiv_n_2_4_8._
 
 class lane_clock_and_reset extends Bundle {
     val clockRef                = Input(Clock())
@@ -53,8 +54,6 @@ class f2_dsp_io(
     val decimator_clocks        = new f2_decimator_clocks
     val decimator_controls      = Vec(antennas,new f2_decimator_controls(gainbits=10))
     val adc_clocks              = Input(Vec(antennas,Clock()))
-    val clock_symrate           = Input(Clock())
-    val clock_symratex4         = Input(Clock())
     val user_index              = Input(UInt(log2Ceil(users).W)) //W should be log2 of users
     val antenna_index           = Input(UInt(log2Ceil(antennas).W)) //W should be log2 of users
     val reset_index_count       = Input(Bool())
@@ -78,6 +77,9 @@ class f2_dsp_io(
     val rx_user_delays          = Input(Vec(antennas, Vec(users,UInt(log2Ceil(progdelay).W))))
     val rx_fine_delays          = Input(Vec(antennas, UInt(log2Ceil(finedelay).W)))
     val rx_user_weights         = Input(Vec(antennas,Vec(users,DspComplex(SInt(rxweightbits.W),SInt(rxweightbits.W)))))
+    val rx_Ndiv                 = Input(UInt(8.W))
+    val rx_reset_clkdiv         = Input(Bool())
+    val rx_clkdiv_shift         = Input(Bool())
     val neighbour_delays        = Input(Vec(neighbours, Vec(users,UInt(log2Ceil(progdelay).W))))
     val serdestest_scan         = new serdes_test_scan_ios(proto=new iofifosigs(n=n,users=users),memsize=serdestestmemsize)
     val reset_dacfifo           = Input(Bool())
@@ -94,7 +96,9 @@ class f2_dsp_io(
     val tx_user_delays          = Input(Vec(antennas, Vec(users,UInt(log2Ceil(progdelay).W))))
     val tx_fine_delays          = Input(Vec(antennas,UInt(log2Ceil(finedelay).W)))
     val tx_user_weights         = Input(Vec(antennas,Vec(users,DspComplex(SInt(txweightbits.W), SInt(txweightbits.W)))))
-    val interpolator_clocks     =  new f2_interpolator_clocks
+    val tx_Ndiv                 = Input(UInt(8.W))
+    val tx_reset_clkdiv         = Input(Bool())
+    val tx_clkdiv_shift         = Input(Bool())
     val interpolator_controls   = Vec(antennas,new f2_interpolator_controls(gainbits=10))
 }
 
@@ -136,26 +140,51 @@ class f2_dsp (
     val iofifozero = 0.U.asTypeOf(new iofifosigs(n=n))
     val datazero   = 0.U.asTypeOf(iofifozero.data)
     val rxindexzero= 0.U.asTypeOf(iofifozero.rxindex)
+    
+    // clock dividers
+    val rxclkdiv = withClock(io.adc_clocks(0))(Module ( new clkdiv_n_2_4_8 ( n=8)).io)
+    rxclkdiv.Ndiv:=io.rx_Ndiv
+    rxclkdiv.reset_clk:=io.rx_reset_clkdiv
+    rxclkdiv.shift:=io.rx_clkdiv_shift
+    val txclkdiv = Module ( new clkdiv_n_2_4_8 ( n=8)).io 
+    txclkdiv.Ndiv:=io.tx_Ndiv
+    txclkdiv.reset_clk:=io.tx_reset_clkdiv
+    txclkdiv.shift:=io.tx_clkdiv_shift
 
     // RX:s
     // Vec is required to do runtime adressing of an array i.e. Seq is not hardware structure
-    val rxdsp  = Module ( new  f2_rx_dsp (inputn=rxinputn, n=n, antennas=antennas,
+    val rxdsp  = withClock(io.adc_clocks(0))(Module ( new  f2_rx_dsp (inputn=rxinputn, n=n, antennas=antennas,
                                             users=users, fifodepth=fifodepth,
                                             progdelay=progdelay,finedelay=finedelay,
-                                            neighbours=neighbours)).io
-    val txdsp  = Module ( new  f2_tx_dsp (outputn=rxinputn, n=n, antennas=antennas,
+                                            neighbours=neighbours)).io)
+    rxdsp.decimator_clocks.cic3clockslow:=rxclkdiv.clkpn.asClock 
+    rxdsp.decimator_clocks.hb1clock_low :=rxclkdiv.clkp2n.asClock 
+    rxdsp.decimator_clocks.hb2clock_low :=rxclkdiv.clkp4n.asClock
+    rxdsp.decimator_clocks.hb3clock_low :=rxclkdiv.clkp8n.asClock
+    rxdsp.clock_symrate                 :=rxclkdiv.clkp8n.asClock
+    rxdsp.clock_symratex4               :=rxclkdiv.clkp2n.asClock
+    //Check clocking
+    rxdsp.clock_infifo_enq.map(_<>rxclkdiv.clkp8n.asClock)
+    rxdsp.clock_outfifo_deq<>rxclkdiv.clkp2n.asClock
+
+    //For TX, the mster clock is the slowest, faster clocks are formed from the system master clock.
+    val txdsp  = withClock(txclkdiv.clkp8n.asClock)(Module ( new  f2_tx_dsp (outputn=rxinputn, n=n, antennas=antennas,
                                             users=users, fifodepth=fifodepth,
                                             progdelay=progdelay,finedelay=finedelay,
-                                            neighbours=neighbours,weightbits=txweightbits)).io
+                                            neighbours=neighbours,weightbits=txweightbits)).io)
+    
+    txdsp.interpolator_clocks.cic3clockfast   := clock
+    txdsp.interpolator_clocks.hb3clock_high   := txclkdiv.clkpn.asClock 
+    txdsp.interpolator_clocks.hb2clock_high   := txclkdiv.clkp2n.asClock 
+    txdsp.interpolator_clocks.hb1clock_high   := txclkdiv.clkp4n.asClock
+    txdsp.clock_symrate                       := txclkdiv.clkp8n.asClock
+    txdsp.clock_outfifo_deq                   := txclkdiv.clkp8n.asClock
 
     //Map io inputs
     //Rx
     rxdsp.iptr_A             :=io.iptr_A
-    rxdsp.decimator_clocks   :=io.decimator_clocks
     rxdsp.decimator_controls :=io.decimator_controls
     rxdsp.adc_clocks         :=io.adc_clocks
-    rxdsp.clock_symrate      :=io.clock_symrate
-    rxdsp.clock_symratex4    :=io.clock_symratex4
     rxdsp.user_index         :=io.user_index
     rxdsp.antenna_index      :=io.antenna_index
     rxdsp.reset_index_count  :=io.reset_index_count
@@ -173,11 +202,8 @@ class f2_dsp (
     rxdsp.rx_user_weights    :=io.rx_user_weights
     rxdsp.neighbour_delays   :=io.neighbour_delays
     //Tx
-    txdsp.interpolator_clocks   <> io.interpolator_clocks
     txdsp.interpolator_controls <> io.interpolator_controls
     txdsp.dac_clocks         <> io.dac_clocks
-    txdsp.clock_symrate      <> io.clock_symrate
-    txdsp.clock_outfifo_deq  <> io.clock_symrate
     txdsp.reset_dacfifo      <> io.reset_dacfifo
     txdsp.user_spread_mode   <> io.user_spread_mode
     txdsp.user_sum_mode      <> io.user_sum_mode
@@ -186,7 +212,6 @@ class f2_dsp (
     txdsp.dac_lut_write_addr <> io.dac_lut_write_addr
     txdsp.dac_lut_write_vals <> io.dac_lut_write_vals
     txdsp.dac_lut_write_en   <> io.dac_lut_write_en
-    //txdsp.optr_neighbours    <> io.optr_neighbours
     txdsp.Z                  <> io.Z
     txdsp.tx_user_delays     := io.tx_user_delays
     txdsp.tx_fine_delays     := io.tx_fine_delays
@@ -277,9 +302,6 @@ class f2_dsp (
    serdestest.to_serdes<>switchbox.from_dsp(neighbours+1)
    serdestest.from_serdes<>switchbox.to_dsp(neighbours+1)
 
-   //Check clocking
-   rxdsp.clock_infifo_enq.map(_<>io.clock_symrate)
-   rxdsp.clock_outfifo_deq<>io.clock_symratex4
 
    //Connect TX DSP to switchbox
    txdsp.iptr_A<>switchbox.to_dsp(0)
