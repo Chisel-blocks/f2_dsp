@@ -111,7 +111,7 @@ class f2_dsp (
         users      : Int=4,
         gainbits   : Int=10,
         txweightbits: Int=10,
-        fifodepth  : Int=128,
+        fifodepth  : Int=16,
         numserdes  : Int=6,
         neighbours : Int=4,
         progdelay  : Int=64,
