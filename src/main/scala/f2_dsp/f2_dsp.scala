@@ -234,6 +234,45 @@ class f2_dsp (
 
     private def iomap[T <: Data] = { x:T => IO(chiselTypeOf(x)) }
 
+    private def syncControlIO(
+      lane: ControlBundle, io: ControlBundle,
+      rxClock: Clock, rxReset: Bool,
+      txClock: Clock, txReset: Bool
+    ): Unit = {
+      // inputs
+      lane.inputMap.foreach { case (name, value) =>
+        // io -> fifo -> lane
+        val in_fifo = Module(new AsyncQueue(value.signal, depth = 1, sync = 3)).io
+        in_fifo.enq.bits  := io.inputMap(name).signal
+        value.signal      := in_fifo.deq.bits
+
+        in_fifo.enq_clock := clock
+        in_fifo.enq_reset := reset
+        in_fifo.deq_clock := rxClock
+        in_fifo.deq_reset := rxReset
+
+        in_fifo.deq.ready    := true.B
+        in_fifo.enq.valid    := true.B // TODO check if needed
+        // Can make assertions on enq.ready and deq.valid for simulation
+      }
+      // outputs
+      lane.outputMap.foreach { case (name, value) =>
+        // lane -> fifo -> io
+        val out_fifo = Module(new AsyncQueue(value.signal, depth = 1, sync = 3)).io
+        out_fifo.enq.bits         := value.signal
+        io.outputMap(name).signal := out_fifo.deq.bits
+
+        out_fifo.enq_clock        := txClock
+        out_fifo.enq_reset        := txReset
+        out_fifo.deq_clock        := clock
+        out_fifo.deq_reset        := reset
+
+        out_fifo.deq.ready        := true.B
+        out_fifo.enq.valid        := true.B // TODO check if needed
+        // Can make assertions on enq.ready and deq.valid for simulation
+      }
+    }
+
     //Connect lane control IO's
     val lane_ssio         = lanes.map(_.ssio.map(iomap))
     val lane_encoderio    = lanes.map(_.encoderio.map(iomap))
@@ -241,45 +280,29 @@ class f2_dsp (
     val lane_packetizerio = lanes.map(_.packetizerio.map(iomap))
     val lane_debugio      = lanes.map(_.debugio.map(_.map(iomap)))
 
-    //ssio
     (lanes, lane_ssio).zipped.foreach { case (lane, ssio) =>
-      // inputs
-      lane.ssio.get.inputMap.foreach  { case (name, value) =>
-        // ssio -> fifo -> lane
-        val fifo = Module(new AsyncQueue(value.signal, depth = 1, sync = 3)).io
-        fifo.enq.bits := ssio.get.inputMap(name).signal
-        value.signal := fifo.deq.bits
-
-        fifo.enq_clock := clock 
-        fifo.enq_reset := reset 
-        fifo.deq_clock := lane.io.rxClock
-        fifo.deq_reset := lane.io.rxReset
-
-        fifo.deq.ready := true.B
-        fifo.enq.valid := true.B // TODO check if needed
-        // Can make assertions on enq.ready and deq.valid for simulation
+      syncControlIO(lane.ssio.get,         ssio.get,         lane.io.rxClock, lane.io.rxReset, lane.io.txClock, lane.io.txReset)
+    }
+    (lanes, lane_encoderio).zipped.foreach { case (lane, encoderio) =>
+      (lane.encoderio, encoderio) match {
+        case (Some(l), Some(e)) => 
+          syncControlIO(l, e, lane.io.rxClock, lane.io.rxReset, lane.io.txClock, lane.io.txReset)
+        case (None, None) =>
+        case _ => throw new Exception(s"Encoder IO has invalid state: ${lane.encoderio} should be ${encoderio}")
       }
-      // outputs
-      lane.ssio.get.outputMap.foreach { case (name, value) =>
-        // lane -> fifo -> ssio
-        val fifo = Module(new AsyncQueue(value.signal, depth = 1, sync = 3)).io
-        fifo.enq.bits := value.signal
-        ssio.get.outputMap(name).signal := fifo.deq.bits
-
-        fifo.enq_clock := lane.io.txClock
-        fifo.enq_reset := lane.io.txReset
-        fifo.deq_clock := clock
-        fifo.deq_reset := reset
-
-        fifo.deq.ready := true.B
-        fifo.enq.valid := true.B // TODO check if needed
-        // Can make assertions on enq.ready and deq.valid for simulation
+    }
+    (lanes, lane_decoderio).zipped.foreach { case (lane, decoderio) =>
+      syncControlIO(lane.decoderio.get,    decoderio.get,    lane.io.rxClock, lane.io.rxReset, lane.io.txClock, lane.io.txReset)
+    }
+    (lanes, lane_packetizerio).zipped.foreach { case (lane, packetizerio) =>
+      syncControlIO(lane.packetizerio.get, packetizerio.get, lane.io.rxClock, lane.io.rxReset, lane.io.txClock, lane.io.txReset)
+    }
+    (lanes, lane_debugio).zipped.foreach { case (lane, debugio) =>
+      (lane.debugio, debugio).zipped.foreach { case (l, d) =>
+        syncControlIO(l.get, d.get, lane.io.rxClock, lane.io.rxReset, lane.io.txClock, lane.io.txReset)
       }
     }
     // .get is used because the io's are Options, not Seq
-    (lanes,lane_decoderio).zipped.map(_.decoderio.get<>_.get)
-    (lanes,lane_packetizerio).zipped.map(_.packetizerio.get<>_.get)
-    (lanes,lane_debugio).zipped.map{ case(l,d) => (l.debugio,d).zipped.map(_.get<>_.get)}
     (lanes,io.lane_clkrst).zipped.map(_.io.asyncResetIn<>_.asyncResetIn)
     (lanes,io.lane_clkrst).zipped.map(_.io.clockRef<>_.clockRef)
     val proto=new iofifosigs(n=n,users=users)
