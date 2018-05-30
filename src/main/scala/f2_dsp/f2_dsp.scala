@@ -177,6 +177,7 @@ class f2_dsp (
     txdsp.interpolator_clocks.hb3clock_high   := txclkdiv.clkpn.asClock 
     txdsp.interpolator_clocks.hb2clock_high   := txclkdiv.clkp2n.asClock 
     txdsp.interpolator_clocks.hb1clock_high   := txclkdiv.clkp4n.asClock
+    txdsp.interpolator_clocks.hb1clock_low    := txclkdiv.clkp8n.asClock
     txdsp.clock_symrate                       := txclkdiv.clkp8n.asClock
     txdsp.clock_outfifo_deq                   := txclkdiv.clkp8n.asClock
 
