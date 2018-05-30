@@ -38,6 +38,7 @@ class f2_dsp_io(
         val thermo             : Int=5,
         val bin                : Int=4,
         val n                  : Int=16,
+        val resolution         : Int=32,
         val antennas           : Int=4,
         val gainbits           : Int=10,
         val txweightbits       : Int=10,
@@ -98,7 +99,7 @@ class f2_dsp_io(
     val tx_Ndiv                 = Input(UInt(8.W))
     val tx_reset_clkdiv         = Input(Bool())
     val tx_clkdiv_shift         = Input(UInt(2.W))
-    val interpolator_controls   = Vec(antennas,new f2_interpolator_controls(gainbits=10))
+    val interpolator_controls   = Vec(antennas,new f2_interpolator_controls(resolution=resolution,gainbits=10))
 }
 
 class f2_dsp (
@@ -107,6 +108,7 @@ class f2_dsp (
         thermo     : Int=5,
         bin        : Int=4,
         n          : Int=16,
+        resolution : Int=32,
         antennas   : Int=4,
         users      : Int=4,
         gainbits   : Int=10,
@@ -125,6 +127,7 @@ class f2_dsp (
             thermo           = thermo,
             bin              = bin,
             n                = n,
+            resolution       = resolution,
             antennas         = antennas,
             gainbits         = gainbits,
             users            = users,
