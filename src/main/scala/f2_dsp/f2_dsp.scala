@@ -88,6 +88,7 @@ class f2_dsp_io(
     val user_select_index       = Input(Vec(antennas,UInt(log2Ceil(users).W)))
     val dac_clocks              = Input(Vec(antennas,Clock()))
     val dac_data_mode           = Input(Vec(antennas,UInt(3.W)))
+    val inv_adc_clk_pol         = Input(Vec(antennas,Bool()))
     val dac_lut_write_addr      = Input(Vec(antennas,UInt(txoutputn.W)))
 
     val dac_lut_write_vals      = Input(Vec(antennas,DspComplex(SInt(txoutputn.W), SInt(txoutputn.W))))
@@ -198,6 +199,7 @@ class f2_dsp (
     rxdsp.rx_output_mode     :=io.rx_output_mode
     rxdsp.input_mode         :=io.input_mode
     rxdsp.adc_fifo_lut_mode  :=io.adc_fifo_lut_mode
+    rxdsp.inv_adc_clk_pol    :=io.inv_adc_clk_pol
     rxdsp.adc_lut_write_addr :=io.adc_lut_write_addr
     rxdsp.adc_lut_write_vals :=io.adc_lut_write_vals
     rxdsp.adc_lut_write_en   :=io.adc_lut_write_en
