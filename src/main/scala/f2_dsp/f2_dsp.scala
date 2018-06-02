@@ -67,6 +67,9 @@ class f2_dsp_io(
     val adc_lut_write_vals      = Input(Vec(antennas,DspComplex(SInt(rxinputn.W), SInt(rxinputn.W))))
     val adc_lut_write_en        = Input(Bool())
     val lane_clkrst             = Vec(numserdes,new lane_clock_and_reset())
+    val lane_refclk_Ndiv        = Input(UInt(8.W))
+    val lane_refclk_reset       = Input(Bool())
+    val lane_refclk_shift       = Input(Bool())
     val laneanalog              = Vec(numserdes,new laneioanalog())
     val from_serdes_scan        = Vec(numserdes,Flipped(DecoupledIO(new iofifosigs(n=n))))
     val from_dsp_scan           = Vec(numserdes,Flipped(DecoupledIO(new iofifosigs(n=n))))
@@ -152,6 +155,11 @@ class f2_dsp (
     txclkdiv.Ndiv:=io.tx_Ndiv
     txclkdiv.reset_clk:=io.tx_reset_clkdiv
     txclkdiv.shift:=io.tx_clkdiv_shift
+    val clkrefdiv = Module ( new clkdiv_n_2_4_8 ( n=8) ).io
+    clkrefdiv.Ndiv     :=io.lane_refclk_Ndiv
+    clkrefdiv.reset_clk:=io.lane_refclk_reset
+    clkrefdiv.shift    :=io.lane_refclk_shift
+
 
     // RX:s
     // Vec is required to do runtime adressing of an array i.e. Seq is not hardware structure
@@ -308,7 +316,8 @@ class f2_dsp (
     }
     // .get is used because the io's are Options, not Seq
     (lanes,io.lane_clkrst).zipped.map(_.io.asyncResetIn<>_.asyncResetIn)
-    (lanes,io.lane_clkrst).zipped.map(_.io.clockRef<>_.clockRef)
+    //(lanes,io.lane_clkrst).zipped.map(_.io.clockRef<>_.clockRef)
+    lanes.map(_.io.clockRef<>clkrefdiv.clkpn.asClock)
     val proto=new iofifosigs(n=n,users=users)
     val serdestest  = Module ( new  f2_serdes_test(proto=proto,n=n,users=users,memsize=serdestestmemsize)).io
    // Map serdestest IOs
