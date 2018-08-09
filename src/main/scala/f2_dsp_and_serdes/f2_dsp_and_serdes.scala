@@ -1,9 +1,9 @@
 // This is the module containing the f2_dsp and the serdes lanes
 // Initially written by Marko Kosunen and Paul Rigge, May 2018
 //
-// Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 09.08.2018 16:29
+// Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 09.08.2018 16:33
 /////////////////////////////////////////////////////////////////////////////
-package f2_dsp
+package f2_dsp_and_serdes
 import chisel3._
 import chisel3.util._
 import chisel3.experimental._
@@ -34,7 +34,7 @@ class laneioanalog extends Bundle {
      val tx_n = Analog(1.W)
 }
 
-class f2_dsp_io(
+class f2_dsp_and_serdes_io(
         val rxinputn           : Int=9,
         val txoutputn          : Int=9,
         val thermo             : Int=5,
@@ -108,7 +108,7 @@ class f2_dsp_io(
     val interpolator_controls   = Vec(antennas,new f2_interpolator_controls(resolution=resolution,gainbits=10))
 }
 
-class f2_dsp (
+class f2_dsp_and_serdes (
         rxinputn   : Int=9,
         txoutputn  : Int=9,
         thermo     : Int=5,
@@ -127,7 +127,7 @@ class f2_dsp (
         serdestestmemsize : Int=scala.math.pow(2,13).toInt
     ) extends MultiIOModule {
     val io = IO(
-        new f2_dsp_io(
+        new f2_dsp_and_serdes_io(
             rxinputn         = rxinputn,
             txoutputn        = txoutputn,
             thermo           = thermo,
@@ -359,8 +359,8 @@ class f2_dsp (
    (lanes,switchbox.from_serdes).zipped.map(_.io.data.rx<>_)
 }
 //This gives you verilog
-object f2_dsp extends App {
-  chisel3.Driver.execute(args, () => new f2_dsp(rxinputn=9, bin=4,thermo=5, n=16, antennas=4, users=4, fifodepth=16, numserdes=2, serdestestmemsize=scala.math.pow(2,13).toInt ))
+object f2_dsp_and_serdes extends App {
+  chisel3.Driver.execute(args, () => new f2_dsp_and_serdes(rxinputn=9, bin=4,thermo=5, n=16, antennas=4, users=4, fifodepth=16, numserdes=2, serdestestmemsize=scala.math.pow(2,13).toInt ))
 }
 
 
