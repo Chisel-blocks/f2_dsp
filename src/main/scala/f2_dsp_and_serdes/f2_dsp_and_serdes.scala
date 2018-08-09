@@ -1,6 +1,8 @@
-// See LICENSE for license details.
+// This is the module containing the f2_dsp and the serdes lanes
+// Initially written by Marko Kosunen and Paul Rigge, May 2018
 //
-//Start with a static tb and try to genererate a gnerator for it
+// Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 09.08.2018 16:29
+/////////////////////////////////////////////////////////////////////////////
 package f2_dsp
 import chisel3._
 import chisel3.util._
