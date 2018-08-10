@@ -19,7 +19,7 @@ import f2_tx_path._
 import f2_serdes_test._
 import clkdiv_n_2_4_8._
 
-class f2_dsp_io(
+class f2_dsp_ctrl_io(
         val rxinputn           : Int=9,
         val txoutputn          : Int=9,
         val thermo             : Int=5,
@@ -37,8 +37,6 @@ class f2_dsp_io(
         val neighbours         : Int=4,
         val serdestestmemsize  : Int=scala.math.pow(2,13).toInt
     ) extends Bundle {
-    val iptr_A                  = Input(Vec(antennas,DspComplex(SInt(rxinputn.W), SInt(rxinputn.W))))
-    val Z                       = Output(Vec(antennas,new dac_io(thermo=thermo,bin=bin)))
     val decimator_controls      = Vec(antennas,new f2_decimator_controls(gainbits=10))
     val adc_clocks              = Input(Vec(antennas,Clock()))
     val user_index              = Input(UInt(log2Ceil(users).W)) //W should be log2 of users
@@ -84,10 +82,46 @@ class f2_dsp_io(
     val tx_reset_clkdiv         = Input(Bool())
     val tx_clkdiv_shift         = Input(UInt(2.W))
     val interpolator_controls   = Vec(antennas,new f2_interpolator_controls(resolution=resolution,gainbits=10))
+}
+
+class f2_dsp_io(
+        val rxinputn           : Int=9,
+        val txoutputn          : Int=9,
+        val thermo             : Int=5,
+        val bin                : Int=4,
+        val n                  : Int=16,
+        val resolution         : Int=32,
+        val antennas           : Int=4,
+        val gainbits           : Int=10,
+        val txweightbits       : Int=10,
+        val rxweightbits       : Int=10,
+        val users              : Int=4,
+        val numserdes          : Int=2,
+        val progdelay          : Int=64,
+        val finedelay          : Int=32,
+        val neighbours         : Int=4,
+        val serdestestmemsize  : Int=scala.math.pow(2,13).toInt
+    ) extends Bundle {
+         val ctrl_and_clocks= new f2_dsp_ctrl_io(
+             rxinputn         = rxinputn,
+             txoutputn        = txoutputn,
+             thermo           = thermo,
+             bin              = bin,
+             n                = n,
+             resolution       = resolution,
+             antennas         = antennas,
+             gainbits         = gainbits,
+             users            = users,
+             numserdes        = numserdes,
+             progdelay        = progdelay,
+             serdestestmemsize=serdestestmemsize
+         )
+        val iptr_A                  = Input(Vec(antennas,DspComplex(SInt(rxinputn.W), SInt(rxinputn.W))))
+        val Z                       = Output(Vec(antennas,new dac_io(thermo=thermo,bin=bin)))
     // In SerDes TX is a input for the transmitter RX is the output of the receiver
     val lanes_rx                =Vec(numserdes,Flipped(DecoupledIO(new iofifosigs(n=n,users=users))))
     val lanes_tx                =Vec(numserdes,DecoupledIO(new iofifosigs(n=n,users=users)))
-}
+    }
 
 class f2_dsp (
         rxinputn   : Int=9,
@@ -131,14 +165,14 @@ class f2_dsp (
      val rxindexzero= 0.U.asTypeOf(iofifozero.rxindex)
      
      // clock dividers
-     val rxclkdiv = withClock(io.adc_clocks(0))(Module ( new clkdiv_n_2_4_8 ( n=8)).io)
-     rxclkdiv.Ndiv:=io.rx_Ndiv
-     rxclkdiv.reset_clk:=io.rx_reset_clkdiv
-     rxclkdiv.shift:=io.rx_clkdiv_shift
+     val rxclkdiv = withClock(io.ctrl_and_clocks.adc_clocks(0))(Module ( new clkdiv_n_2_4_8 ( n=8)).io)
+     rxclkdiv.Ndiv:=io.ctrl_and_clocks.rx_Ndiv
+     rxclkdiv.reset_clk:=io.ctrl_and_clocks.rx_reset_clkdiv
+     rxclkdiv.shift:=io.ctrl_and_clocks.rx_clkdiv_shift
      val txclkdiv = Module ( new clkdiv_n_2_4_8 ( n=8)).io 
-     txclkdiv.Ndiv:=io.tx_Ndiv
-     txclkdiv.reset_clk:=io.tx_reset_clkdiv
-     txclkdiv.shift:=io.tx_clkdiv_shift
+     txclkdiv.Ndiv:=io.ctrl_and_clocks.tx_Ndiv
+     txclkdiv.reset_clk:=io.ctrl_and_clocks.tx_reset_clkdiv
+     txclkdiv.shift:=io.ctrl_and_clocks.tx_clkdiv_shift
  
      // RX:s
      // Vec is required to do runtime adressing of an array i.e. Seq is not hardware structure
@@ -177,40 +211,40 @@ class f2_dsp (
      //Map io inputs
      //Rx
      rxdsp.iptr_A             :=io.iptr_A
-     rxdsp.decimator_controls :=io.decimator_controls
-     rxdsp.adc_clocks         :=io.adc_clocks
-     rxdsp.user_index         :=io.user_index
-     rxdsp.antenna_index      :=io.antenna_index
-     rxdsp.reset_index_count  :=io.reset_index_count
-     rxdsp.reset_adcfifo      :=io.reset_adcfifo
-     rxdsp.reset_outfifo      :=io.reset_outfifo
-     rxdsp.reset_infifo       :=io.reset_infifo
-     rxdsp.rx_output_mode     :=io.rx_output_mode
-     rxdsp.input_mode         :=io.input_mode
-     rxdsp.adc_fifo_lut_mode  :=io.adc_fifo_lut_mode
-     rxdsp.inv_adc_clk_pol    :=io.inv_adc_clk_pol
-     rxdsp.adc_lut_write_addr :=io.adc_lut_write_addr
-     rxdsp.adc_lut_write_vals :=io.adc_lut_write_vals
-     rxdsp.adc_lut_write_en   :=io.adc_lut_write_en
-     rxdsp.rx_user_delays     :=io.rx_user_delays
-     rxdsp.rx_fine_delays     :=io.rx_fine_delays
-     rxdsp.rx_user_weights    :=io.rx_user_weights
-     rxdsp.neighbour_delays   :=io.neighbour_delays
+     rxdsp.decimator_controls :=io.ctrl_and_clocks.decimator_controls
+     rxdsp.adc_clocks         :=io.ctrl_and_clocks.adc_clocks
+     rxdsp.user_index         :=io.ctrl_and_clocks.user_index
+     rxdsp.antenna_index      :=io.ctrl_and_clocks.antenna_index
+     rxdsp.reset_index_count  :=io.ctrl_and_clocks.reset_index_count
+     rxdsp.reset_adcfifo      :=io.ctrl_and_clocks.reset_adcfifo
+     rxdsp.reset_outfifo      :=io.ctrl_and_clocks.reset_outfifo
+     rxdsp.reset_infifo       :=io.ctrl_and_clocks.reset_infifo
+     rxdsp.rx_output_mode     :=io.ctrl_and_clocks.rx_output_mode
+     rxdsp.input_mode         :=io.ctrl_and_clocks.input_mode
+     rxdsp.adc_fifo_lut_mode  :=io.ctrl_and_clocks.adc_fifo_lut_mode
+     rxdsp.inv_adc_clk_pol    :=io.ctrl_and_clocks.inv_adc_clk_pol
+     rxdsp.adc_lut_write_addr :=io.ctrl_and_clocks.adc_lut_write_addr
+     rxdsp.adc_lut_write_vals :=io.ctrl_and_clocks.adc_lut_write_vals
+     rxdsp.adc_lut_write_en   :=io.ctrl_and_clocks.adc_lut_write_en
+     rxdsp.rx_user_delays     :=io.ctrl_and_clocks.rx_user_delays
+     rxdsp.rx_fine_delays     :=io.ctrl_and_clocks.rx_fine_delays
+     rxdsp.rx_user_weights    :=io.ctrl_and_clocks.rx_user_weights
+     rxdsp.neighbour_delays   :=io.ctrl_and_clocks.neighbour_delays
      //Tx
-     txdsp.interpolator_controls <> io.interpolator_controls
-     txdsp.dac_clocks         <> io.dac_clocks
-     txdsp.reset_dacfifo      <> io.reset_dacfifo
-     txdsp.user_spread_mode   <> io.user_spread_mode
-     txdsp.user_sum_mode      <> io.user_sum_mode
-     txdsp.user_select_index  <> io.user_select_index
-     txdsp.dac_data_mode      <> io.dac_data_mode
-     txdsp.dac_lut_write_addr <> io.dac_lut_write_addr
-     txdsp.dac_lut_write_vals <> io.dac_lut_write_vals
-     txdsp.dac_lut_write_en   <> io.dac_lut_write_en
+     txdsp.interpolator_controls <> io.ctrl_and_clocks.interpolator_controls
+     txdsp.dac_clocks         <> io.ctrl_and_clocks.dac_clocks
+     txdsp.reset_dacfifo      <> io.ctrl_and_clocks.reset_dacfifo
+     txdsp.user_spread_mode   <> io.ctrl_and_clocks.user_spread_mode
+     txdsp.user_sum_mode      <> io.ctrl_and_clocks.user_sum_mode
+     txdsp.user_select_index  <> io.ctrl_and_clocks.user_select_index
+     txdsp.dac_data_mode      <> io.ctrl_and_clocks.dac_data_mode
+     txdsp.dac_lut_write_addr <> io.ctrl_and_clocks.dac_lut_write_addr
+     txdsp.dac_lut_write_vals <> io.ctrl_and_clocks.dac_lut_write_vals
+     txdsp.dac_lut_write_en   <> io.ctrl_and_clocks.dac_lut_write_en
      txdsp.Z                  <> io.Z
-     txdsp.tx_user_delays     := io.tx_user_delays
-     txdsp.tx_fine_delays     := io.tx_fine_delays
-     txdsp.tx_user_weights    := io.tx_user_weights
+     txdsp.tx_user_delays     := io.ctrl_and_clocks.tx_user_delays
+     txdsp.tx_fine_delays     := io.ctrl_and_clocks.tx_fine_delays
+     txdsp.tx_user_weights    := io.ctrl_and_clocks.tx_user_weights
  
      val switchbox = Module (
          new f2_lane_switch (
@@ -226,14 +260,14 @@ class f2_dsp (
      val serdestest  = Module ( new  f2_serdes_test(proto=proto,n=n,users=users,memsize=serdestestmemsize)).io
  
      // Map serdestest IOs
-     serdestest.scan<>io.serdestest_scan
+     serdestest.scan<>io.ctrl_and_clocks.serdestest_scan
      //Switchbox controls
-     switchbox.from_serdes_scan     <> io.from_serdes_scan
-     switchbox.from_dsp_scan        <> io.from_dsp_scan
-     switchbox.dsp_to_serdes_address<> io.dsp_to_serdes_address
-     switchbox.serdes_to_dsp_address<> io.serdes_to_dsp_address
-     switchbox.to_serdes_mode       <> io.to_serdes_mode
-     switchbox.to_dsp_mode          <> io.to_dsp_mode
+     switchbox.from_serdes_scan     <> io.ctrl_and_clocks.from_serdes_scan
+     switchbox.from_dsp_scan        <> io.ctrl_and_clocks.from_dsp_scan
+     switchbox.dsp_to_serdes_address<> io.ctrl_and_clocks.dsp_to_serdes_address
+     switchbox.serdes_to_dsp_address<> io.ctrl_and_clocks.serdes_to_dsp_address
+     switchbox.to_serdes_mode       <> io.ctrl_and_clocks.to_serdes_mode
+     switchbox.to_dsp_mode          <> io.ctrl_and_clocks.to_dsp_mode
  
      //Connect RX DSP to switchbox
      rxdsp.ofifo<>switchbox.from_dsp(0)
