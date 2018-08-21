@@ -16,7 +16,7 @@ object tb_f2_dsp {
          val tb = new BufferedWriter(new FileWriter("./verilog/"+name+".v"))
          object tbvars {
              val oname=name
-             val dutmod = "f2_tx_dsp" 
+             val dutmod = "f2_dsp" 
              val uindexbits=2
              val rxindexbits=2
              object tx {
@@ -95,9 +95,9 @@ object tb_f2_dsp {
                           ("reg","asyncResetIn_clockRef","None","None","None",1),
                           ("wire","lane_clkrst_clockRef","None","None","None","None"),
                           ("reg","lane_clkrst_asyncResetIn","None","None","None",1),
-                          ("reg","lane_refclk_Ndiv","None","None","None","g_lane_refclk_Ndiv"),
+                          ("reg","lane_refclk_Ndiv",7,0,"None","g_lane_refclk_Ndiv"),
                           ("reg","lane_refclk_reset","None","None","None",1),
-                          ("reg","lane_refclk_shift","None","None","None","g_lane_refclk_shift"),
+                          ("reg","lane_refclk_shift",1,0,"None","g_lane_refclk_shift"),
                           ("wire","clkp2n","None","None","None","None"), //Not used
                           ("wire","clkp4n","None","None","None","None"), //Not used 
                           ("wire","clkp8n","None","None","None","None"), //Not used
@@ -109,9 +109,7 @@ object tb_f2_dsp {
                           ("in","io_ctrl_and_clocks_rx_clkdiv_shift",1,0,"None","g_rx_shift"),
                           ("reg","reset_loop","None","None","None",1),
                           ("reset","reset","None","None","None",1),
-                          ("out","io_iptr_A_ready","None","None","None","None"),
                           ("in","clock","None","None","None","None"),
-                          ("in","io_iptr_A_valid","None","None","None","'b0"),
                           ("in","io_iptr_A_0_real",rx.inbits-1,0,"None","'b0"),
                           ("in","io_iptr_A_0_imag",rx.inbits-1,0,"None","'b0"),
                           ("in","io_iptr_A_1_real",rx.inbits-1,0,"None","'b0"),
@@ -153,7 +151,7 @@ object tb_f2_dsp {
                           ("dclk","io_ctrl_and_clocks_dac_clocks_2","None","None","clock","None"),
                           ("dclk","io_ctrl_and_clocks_dac_clocks_3","None","None","clock","None"),
                           ("in","io_ctrl_and_clocks_reset_dacfifo","None","None","None","'b1"),
-                          ("in","io_ctrl_and_clock_user_spread_mode",tx.spreadmodebits-1,0,"None","g_tx_user_spread_mode"),
+                          ("in","io_ctrl_and_clocks_user_spread_mode",tx.spreadmodebits-1,0,"None","g_tx_user_spread_mode"),
                           ("in","io_ctrl_and_clocks_user_sum_mode_0",tx.summodebits-1,0,"None","g_tx_user_sum_mode"),
                           ("in","io_ctrl_and_clocks_user_sum_mode_1",tx.summodebits-1,0,"None","g_tx_user_sum_mode"),
                           ("in","io_ctrl_and_clocks_user_sum_mode_2",tx.summodebits-1,0,"None","g_tx_user_sum_mode"),
@@ -436,120 +434,122 @@ object tb_f2_dsp {
                           ("in","io_ctrl_and_clocks_neighbour_delays_3_1",rx.delay_width-1,0,"None","'b0"),
                           ("in","io_ctrl_and_clocks_neighbour_delays_3_2",rx.delay_width-1,0,"None","'b0"),
                           ("in","io_ctrl_and_clocks_neighbour_delays_3_3",rx.delay_width-1,0,"None","'b0"),
- 
                           //Serdes test stuff
-                          ("out","io_ctrl_and_clocks_from_serdes_scan_0_ready","None","None","None"),
-                          ("in","io_ctrl_and_clocks_from_serdes_scan_0_valid","None","None","None"),
-                          ("in","io_ctrl_and_clocks_from_serdes_scan_0_bits_data_0_udata_real",15,0,"None"),
-                          ("in","io_ctrl_and_clocks_from_serdes_scan_0_bits_data_0_udata_imag",15,0,"None"),
-                          ("in","io_ctrl_and_clocks_from_serdes_scan_0_bits_data_0_uindex",1,0,"None"),
-                          ("in","io_ctrl_and_clocks_from_serdes_scan_0_bits_data_1_udata_real",15,0,"None"),
-                          ("in","io_ctrl_and_clocks_from_serdes_scan_0_bits_data_1_udata_imag",15,0,"None"),
-                          ("in","io_ctrl_and_clocks_from_serdes_scan_0_bits_data_1_uindex",1,0,"None"),
-                          ("in","io_ctrl_and_clocks_from_serdes_scan_0_bits_data_2_udata_real",15,0,"None"),
-                          ("in","io_ctrl_and_clocks_from_serdes_scan_0_bits_data_2_udata_imag",15,0,"None"),
-                          ("in","io_ctrl_and_clocks_from_serdes_scan_0_bits_data_2_uindex",1,0,"None"),
-                          ("in","io_ctrl_and_clocks_from_serdes_scan_0_bits_data_3_udata_real",15,0,"None"),
-                          ("in","io_ctrl_and_clocks_from_serdes_scan_0_bits_data_3_udata_imag",15,0,"None"),
-                          ("in","io_ctrl_and_clocks_from_serdes_scan_0_bits_data_3_uindex",1,0,"None"),
-                          ("in","io_ctrl_and_clocks_from_serdes_scan_0_bits_rxindex",1,0,"None"),
-                          ("out","io_ctrl_and_clocks_from_serdes_scan_1_ready","None","None","None"),
-                          ("in","io_ctrl_and_clocks_from_serdes_scan_1_valid","None","None","None"),
-                          ("in","io_ctrl_and_clocks_from_serdes_scan_1_bits_data_0_udata_real",15,0,"None"),
-                          ("in","io_ctrl_and_clocks_from_serdes_scan_1_bits_data_0_udata_imag",15,0,"None"),
-                          ("in","io_ctrl_and_clocks_from_serdes_scan_1_bits_data_0_uindex",1,0,"None"),
-                          ("in","io_ctrl_and_clocks_from_serdes_scan_1_bits_data_1_udata_real",15,0,"None"),
-                          ("in","io_ctrl_and_clocks_from_serdes_scan_1_bits_data_1_udata_imag",15,0,"None"),
-                          ("in","io_ctrl_and_clocks_from_serdes_scan_1_bits_data_1_uindex",1,0,"None"),
-                          ("in","io_ctrl_and_clocks_from_serdes_scan_1_bits_data_2_udata_real",15,0,"None"),
-                          ("in","io_ctrl_and_clocks_from_serdes_scan_1_bits_data_2_udata_imag",15,0,"None"),
-                          ("in","io_ctrl_and_clocks_from_serdes_scan_1_bits_data_2_uindex",1,0,"None"),
-                          ("in","io_ctrl_and_clocks_from_serdes_scan_1_bits_data_3_udata_real",15,0,"None"),
-                          ("in","io_ctrl_and_clocks_from_serdes_scan_1_bits_data_3_udata_imag",15,0,"None"),
-                          ("in","io_ctrl_and_clocks_from_serdes_scan_1_bits_data_3_uindex",1,0,"None"),
-                          ("in","io_ctrl_and_clocks_from_serdes_scan_1_bits_rxindex",1,0,"None"),
-                          ("out","io_ctrl_and_clocks_from_dsp_scan_0_ready","None","None","None"),
-                          ("in","io_ctrl_and_clocks_from_dsp_scan_0_valid","None","None","None"),
-                          ("in","io_ctrl_and_clocks_from_dsp_scan_0_bits_data_0_udata_real",15,0,"None"),
-                          ("in","io_ctrl_and_clocks_from_dsp_scan_0_bits_data_0_udata_imag",15,0,"None"),
-                          ("in","io_ctrl_and_clocks_from_dsp_scan_0_bits_data_0_uindex",1,0,"None"),
-                          ("in","io_ctrl_and_clocks_from_dsp_scan_0_bits_data_1_udata_real",15,0,"None"),
-                          ("in","io_ctrl_and_clocks_from_dsp_scan_0_bits_data_1_udata_imag",15,0,"None"),
-                          ("in","io_ctrl_and_clocks_from_dsp_scan_0_bits_data_1_uindex",1,0,"None"),
-                          ("in","io_ctrl_and_clocks_from_dsp_scan_0_bits_data_2_udata_real",15,0,"None"),
-                          ("in","io_ctrl_and_clocks_from_dsp_scan_0_bits_data_2_udata_imag",15,0,"None"),
-                          ("in","io_ctrl_and_clocks_from_dsp_scan_0_bits_data_2_uindex",1,0,"None"),
-                          ("in","io_ctrl_and_clocks_from_dsp_scan_0_bits_data_3_udata_real",15,0,"None"),
-                          ("in","io_ctrl_and_clocks_from_dsp_scan_0_bits_data_3_udata_imag",15,0,"None"),
-                          ("in","io_ctrl_and_clocks_from_dsp_scan_0_bits_data_3_uindex",1,0,"None"),
-                          ("in","io_ctrl_and_clocks_from_dsp_scan_0_bits_rxindex",1,0,"None"),
-                          ("out","io_ctrl_and_clocks_from_dsp_scan_1_ready","None","None","None"),
-                          ("in","io_ctrl_and_clocks_from_dsp_scan_1_valid","None","None","None"),
-                          ("in","io_ctrl_and_clocks_from_dsp_scan_1_bits_data_0_udata_real",15,0,"None"),
-                          ("in","io_ctrl_and_clocks_from_dsp_scan_1_bits_data_0_udata_imag",15,0,"None"),
-                          ("in","io_ctrl_and_clocks_from_dsp_scan_1_bits_data_0_uindex",1,0,"None"),
-                          ("in","io_ctrl_and_clocks_from_dsp_scan_1_bits_data_1_udata_real",15,0,"None"),
-                          ("in","io_ctrl_and_clocks_from_dsp_scan_1_bits_data_1_udata_imag",15,0,"None"),
-                          ("in","io_ctrl_and_clocks_from_dsp_scan_1_bits_data_1_uindex",1,0,"None"),
-                          ("in","io_ctrl_and_clocks_from_dsp_scan_1_bits_data_2_udata_real",15,0,"None"),
-                          ("in","io_ctrl_and_clocks_from_dsp_scan_1_bits_data_2_udata_imag",15,0,"None"),
-                          ("in","io_ctrl_and_clocks_from_dsp_scan_1_bits_data_2_uindex",1,0,"None"),
-                          ("in","io_ctrl_and_clocks_from_dsp_scan_1_bits_data_3_udata_real",15,0,"None"),
-                          ("in","io_ctrl_and_clocks_from_dsp_scan_1_bits_data_3_udata_imag",15,0,"None"),
-                          ("in","io_ctrl_and_clocks_from_dsp_scan_1_bits_data_3_uindex",1,0,"None"),
-                          ("in","io_ctrl_and_clocks_from_dsp_scan_1_bits_rxindex",1,0,"None"),
-                          ("in","io_ctrl_and_clocks_dsp_to_serdes_address_0",2,0,"None"),
-                          ("in","io_ctrl_and_clocks_dsp_to_serdes_address_1",2,0,"None"),
-                          ("in","io_ctrl_and_clocks_serdes_to_dsp_address_0","None","None","None"),
-                          ("in","io_ctrl_and_clocks_serdes_to_dsp_address_1","None","None","None"),
-                          ("in","io_ctrl_and_clocks_serdes_to_dsp_address_2","None","None","None"),
-                          ("in","io_ctrl_and_clocks_serdes_to_dsp_address_3","None","None","None"),
-                          ("in","io_ctrl_and_clocks_serdes_to_dsp_address_4","None","None","None"),
-                          ("in","io_ctrl_and_clocks_serdes_to_dsp_address_5","None","None","None"),
-                          ("in","io_ctrl_and_clocks_to_serdes_mode_0",1,0,"None"),
-                          ("in","io_ctrl_and_clocks_to_serdes_mode_1",1,0,"None"),
-                          ("in","io_ctrl_and_clocks_to_dsp_mode_0",1,0,"None"),
-                          ("in","io_ctrl_and_clocks_to_dsp_mode_1",1,0,"None"),
-                          ("in","io_ctrl_and_clocks_to_dsp_mode_2",1,0,"None"),
-                          ("in","io_ctrl_and_clocks_to_dsp_mode_3",1,0,"None"),
-                          ("in","io_ctrl_and_clocks_to_dsp_mode_4",1,0,"None"),
-                          ("in","io_ctrl_and_clocks_to_dsp_mode_5",1,0,"None"),
-                          ("in","io_ctrl_and_clocks_serdestest_scan_write_mode",1,0,"None"),
-                          ("in","io_ctrl_and_clocks_serdestest_scan_write_address",12,0,"None"),
-                          ("in","io_ctrl_and_clocks_serdestest_scan_write_value_data_0_udata_real",15,0,"None"),
-                          ("in","io_ctrl_and_clocks_serdestest_scan_write_value_data_0_udata_imag",15,0,"None"),
-                          ("in","io_ctrl_and_clocks_serdestest_scan_write_value_data_0_uindex",1,0,"None"),
-                          ("in","io_ctrl_and_clocks_serdestest_scan_write_value_data_1_udata_real",15,0,"None"),
-                          ("in","io_ctrl_and_clocks_serdestest_scan_write_value_data_1_udata_imag",15,0,"None"),
-                          ("in","io_ctrl_and_clocks_serdestest_scan_write_value_data_1_uindex",1,0,"None"),
-                          ("in","io_ctrl_and_clocks_serdestest_scan_write_value_data_2_udata_real",15,0,"None"),
-                          ("in","io_ctrl_and_clocks_serdestest_scan_write_value_data_2_udata_imag",15,0,"None"),
-                          ("in","io_ctrl_and_clocks_serdestest_scan_write_value_data_2_uindex",1,0,"None"),
-                          ("in","io_ctrl_and_clocks_serdestest_scan_write_value_data_3_udata_real",15,0,"None"),
-                          ("in","io_ctrl_and_clocks_serdestest_scan_write_value_data_3_udata_imag",15,0,"None"),
-                          ("in","io_ctrl_and_clocks_serdestest_scan_write_value_data_3_uindex",1,0,"None"),
-                          ("in","io_ctrl_and_clocks_serdestest_scan_write_value_rxindex",1,0,"None"),
-                          ("in","io_ctrl_and_clocks_serdestest_scan_write_en","None","None","None"),
-                          ("in","io_ctrl_and_clocks_serdestest_scan_read_mode",1,0,"None"),
-                          ("in","io_ctrl_and_clocks_serdestest_scan_read_address",12,0,"None"),
-                          ("out","io_ctrl_and_clocks_serdestest_scan_read_value_data_0_udata_real",15,0,"None"),
-                          ("out","io_ctrl_and_clocks_serdestest_scan_read_value_data_0_udata_imag",15,0,"None"),
-                          ("out","io_ctrl_and_clocks_serdestest_scan_read_value_data_0_uindex",1,0,"None"),
-                          ("out","io_ctrl_and_clocks_serdestest_scan_read_value_data_1_udata_real",15,0,"None"),
-                          ("out","io_ctrl_and_clocks_serdestest_scan_read_value_data_1_udata_imag",15,0,"None"),
-                          ("out","io_ctrl_and_clocks_serdestest_scan_read_value_data_1_uindex",1,0,"None"),
-                          ("out","io_ctrl_and_clocks_serdestest_scan_read_value_data_2_udata_real",15,0,"None"),
-                          ("out","io_ctrl_and_clocks_serdestest_scan_read_value_data_2_udata_imag",15,0,"None"),
-                          ("out","io_ctrl_and_clocks_serdestest_scan_read_value_data_2_uindex",1,0,"None"),
-                          ("out","io_ctrl_and_clocks_serdestest_scan_read_value_data_3_udata_real",15,0,"None"),
-                          ("out","io_ctrl_and_clocks_serdestest_scan_read_value_data_3_udata_imag",15,0,"None"),
-                          ("out","io_ctrl_and_clocks_serdestest_scan_read_value_data_3_uindex",1,0,"None"),
-                          ("out","io_ctrl_and_clocks_serdestest_scan_read_value_rxindex","1","None","None"),
-                          ("in","io_ctrl_and_clocks_serdestest_scan_read_en","None","None","None")
+                          ("out","io_ctrl_and_clocks_from_serdes_scan_0_ready","None","None","None","None"),
+                          ("in","io_ctrl_and_clocks_from_serdes_scan_0_valid","None","None","None","'b0"),
+                          ("in","io_ctrl_and_clocks_from_serdes_scan_0_bits_data_0_udata_real",15,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_from_serdes_scan_0_bits_data_0_udata_imag",15,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_from_serdes_scan_0_bits_data_0_uindex",1,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_from_serdes_scan_0_bits_data_1_udata_real",15,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_from_serdes_scan_0_bits_data_1_udata_imag",15,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_from_serdes_scan_0_bits_data_1_uindex",1,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_from_serdes_scan_0_bits_data_2_udata_real",15,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_from_serdes_scan_0_bits_data_2_udata_imag",15,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_from_serdes_scan_0_bits_data_2_uindex",1,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_from_serdes_scan_0_bits_data_3_udata_real",15,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_from_serdes_scan_0_bits_data_3_udata_imag",15,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_from_serdes_scan_0_bits_data_3_uindex",1,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_from_serdes_scan_0_bits_rxindex",1,0,"None","'b0"),
+                          ("out","io_ctrl_and_clocks_from_serdes_scan_1_ready","None","None","None","None"),
+                          ("in","io_ctrl_and_clocks_from_serdes_scan_1_valid","None","None","None","'b0"),
+                          ("in","io_ctrl_and_clocks_from_serdes_scan_1_bits_data_0_udata_real",15,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_from_serdes_scan_1_bits_data_0_udata_imag",15,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_from_serdes_scan_1_bits_data_0_uindex",1,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_from_serdes_scan_1_bits_data_1_udata_real",15,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_from_serdes_scan_1_bits_data_1_udata_imag",15,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_from_serdes_scan_1_bits_data_1_uindex",1,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_from_serdes_scan_1_bits_data_2_udata_real",15,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_from_serdes_scan_1_bits_data_2_udata_imag",15,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_from_serdes_scan_1_bits_data_2_uindex",1,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_from_serdes_scan_1_bits_data_3_udata_real",15,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_from_serdes_scan_1_bits_data_3_udata_imag",15,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_from_serdes_scan_1_bits_data_3_uindex",1,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_from_serdes_scan_1_bits_rxindex",1,0,"None","'b0"),
+                          ("out","io_ctrl_and_clocks_from_dsp_scan_0_ready","None","None","None","None"),
+                          ("in","io_ctrl_and_clocks_from_dsp_scan_0_valid","None","None","None","'b0"),
+                          ("in","io_ctrl_and_clocks_from_dsp_scan_0_bits_data_0_udata_real",15,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_from_dsp_scan_0_bits_data_0_udata_imag",15,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_from_dsp_scan_0_bits_data_0_uindex",1,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_from_dsp_scan_0_bits_data_1_udata_real",15,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_from_dsp_scan_0_bits_data_1_udata_imag",15,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_from_dsp_scan_0_bits_data_1_uindex",1,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_from_dsp_scan_0_bits_data_2_udata_real",15,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_from_dsp_scan_0_bits_data_2_udata_imag",15,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_from_dsp_scan_0_bits_data_2_uindex",1,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_from_dsp_scan_0_bits_data_3_udata_real",15,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_from_dsp_scan_0_bits_data_3_udata_imag",15,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_from_dsp_scan_0_bits_data_3_uindex",1,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_from_dsp_scan_0_bits_rxindex",1,0,"None","'b0"),
+                          ("out","io_ctrl_and_clocks_from_dsp_scan_1_ready","None","None","None","None"),
+                          ("in","io_ctrl_and_clocks_from_dsp_scan_1_valid","None","None","None","'b0"),
+                          ("in","io_ctrl_and_clocks_from_dsp_scan_1_bits_data_0_udata_real",15,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_from_dsp_scan_1_bits_data_0_udata_imag",15,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_from_dsp_scan_1_bits_data_0_uindex",1,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_from_dsp_scan_1_bits_data_1_udata_real",15,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_from_dsp_scan_1_bits_data_1_udata_imag",15,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_from_dsp_scan_1_bits_data_1_uindex",1,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_from_dsp_scan_1_bits_data_2_udata_real",15,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_from_dsp_scan_1_bits_data_2_udata_imag",15,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_from_dsp_scan_1_bits_data_2_uindex",1,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_from_dsp_scan_1_bits_data_3_udata_real",15,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_from_dsp_scan_1_bits_data_3_udata_imag",15,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_from_dsp_scan_1_bits_data_3_uindex",1,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_from_dsp_scan_1_bits_rxindex",1,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_dsp_to_serdes_address_0",2,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_dsp_to_serdes_address_1",2,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_serdes_to_dsp_address_0","None","None","None","'b0"),
+                          ("in","io_ctrl_and_clocks_serdes_to_dsp_address_1","None","None","None","'b0"),
+                          ("in","io_ctrl_and_clocks_serdes_to_dsp_address_2","None","None","None","'b0"),
+                          ("in","io_ctrl_and_clocks_serdes_to_dsp_address_3","None","None","None","'b0"),
+                          ("in","io_ctrl_and_clocks_serdes_to_dsp_address_4","None","None","None","'b0"),
+                          ("in","io_ctrl_and_clocks_serdes_to_dsp_address_5","None","None","None","'b0"),
+                          ("in","io_ctrl_and_clocks_to_serdes_mode_0",1,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_to_serdes_mode_1",1,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_to_dsp_mode_0",1,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_to_dsp_mode_1",1,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_to_dsp_mode_2",1,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_to_dsp_mode_3",1,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_to_dsp_mode_4",1,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_to_dsp_mode_5",1,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_serdestest_scan_write_mode",1,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_serdestest_scan_write_address",12,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_serdestest_scan_write_value_data_0_udata_real",15,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_serdestest_scan_write_value_data_0_udata_imag",15,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_serdestest_scan_write_value_data_0_uindex",1,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_serdestest_scan_write_value_data_1_udata_real",15,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_serdestest_scan_write_value_data_1_udata_imag",15,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_serdestest_scan_write_value_data_1_uindex",1,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_serdestest_scan_write_value_data_2_udata_real",15,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_serdestest_scan_write_value_data_2_udata_imag",15,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_serdestest_scan_write_value_data_2_uindex",1,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_serdestest_scan_write_value_data_3_udata_real",15,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_serdestest_scan_write_value_data_3_udata_imag",15,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_serdestest_scan_write_value_data_3_uindex",1,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_serdestest_scan_write_value_rxindex",1,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_serdestest_scan_write_en","None","None","None","'b0"),
+                          ("in","io_ctrl_and_clocks_serdestest_scan_read_mode",1,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_serdestest_scan_read_address",12,0,"None","'b0"),
+                          ("out","io_ctrl_and_clocks_serdestest_scan_read_value_data_0_udata_real",15,0,"None","None"),
+                          ("out","io_ctrl_and_clocks_serdestest_scan_read_value_data_0_udata_imag",15,0,"None","None"),
+                          ("out","io_ctrl_and_clocks_serdestest_scan_read_value_data_0_uindex",1,0,"None","None"),
+                          ("out","io_ctrl_and_clocks_serdestest_scan_read_value_data_1_udata_real",15,0,"None","None"),
+                          ("out","io_ctrl_and_clocks_serdestest_scan_read_value_data_1_udata_imag",15,0,"None","None"),
+                          ("out","io_ctrl_and_clocks_serdestest_scan_read_value_data_1_uindex",1,0,"None","None"),
+                          ("out","io_ctrl_and_clocks_serdestest_scan_read_value_data_2_udata_real",15,0,"None","None"),
+                          ("out","io_ctrl_and_clocks_serdestest_scan_read_value_data_2_udata_imag",15,0,"None","None"),
+                          ("out","io_ctrl_and_clocks_serdestest_scan_read_value_data_2_uindex",1,0,"None","None"),
+                          ("out","io_ctrl_and_clocks_serdestest_scan_read_value_data_3_udata_real",15,0,"None","None"),
+                          ("out","io_ctrl_and_clocks_serdestest_scan_read_value_data_3_udata_imag",15,0,"None","None"),
+                          ("out","io_ctrl_and_clocks_serdestest_scan_read_value_data_3_uindex",1,0,"None","None"),
+                          ("out","io_ctrl_and_clocks_serdestest_scan_read_value_rxindex",1,0,"None","None"),
+                          ("in","io_ctrl_and_clocks_serdestest_scan_read_en","None","None","None","'b0")
                       )
         }
         val header="//This is a tesbench generated with scala generator\n"
         var extpars="""//Things you want to control from the simulator cmdline must be parameters %nmodule %s #(""".format(tbvars.oname)+
+                      tbvars.iofilesparamseq.map{ 
+                           case (dir,par,value) => "parameter %s = %s,\n            ".format(par,value)
+                       }.mkString+
                        tbvars.paramseq.map{ 
                            case (par,value) => "parameter %s = %s,\n            ".format(par,value)
                        }.mkString
@@ -641,8 +641,6 @@ object tb_f2_dsp {
                         |//Initializations
                         |initial clock = 1'b0;
                         |initial reset = 1'b0;
-                        |initial f_io_Z = $fopen(g_io_Z,"w"); // For writing
-                        |initial f_io_Z = $fopen(g_io_lanes_tx,"w"); // For writing
                         |
                         |//Clock definitions
                         |always #(c_Ts)clock = !clock ;
@@ -651,7 +649,7 @@ object tb_f2_dsp {
                         |always @(posedge io_ctrl_and_clocks_dac_clocks_0 && (initdone==1)) begin 
                         |    //Print only valid values 
                         |    if (~$isunknown(io_Z_0_real_t) ) begin
-                        |        $fwrite(outfile, "%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n", 
+                        |        $fwrite(f_io_Z, "%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n", 
                         |                         io_Z_0_real_t, io_Z_0_real_b, 
                         |                         io_Z_0_imag_t, io_Z_0_imag_b, 
                         |                         io_Z_1_real_t, io_Z_1_real_b, 
@@ -669,7 +667,7 @@ object tb_f2_dsp {
                         |always @(posedge io_ctrl_and_clocks_dac_clocks_0 && (initdone==1)) begin 
                         |    //Print only valid values 
                         |    if (~$isunknown(io_lanes_tx_0_bits_data_0_udata_real) ) begin
-                        |        $fwrite(outfile, "%d\t%d\t%d %d\t%d\t%d%d\t%d\t%d%d\t%d\t%d%d\t%d\t%d%d\t%d\t%d%d\t%d\t%d%d\t%d\t%d\n", 
+                        |        $fwrite(f_io_lanes_tx, "%d\t%d\t%d %d\t%d\t%d%d\t%d\t%d%d\t%d\t%d%d\t%d\t%d%d\t%d\t%d%d\t%d\t%d%d\t%d\t%d\n", 
                         |                         io_lanes_tx_0_bits_data_0_udata_real, io_lanes_tx_0_bits_data_0_udata_imag, io_lanes_tx_0_bits_data_0_uindex,
                         |                         io_lanes_tx_0_bits_data_1_udata_real, io_lanes_tx_0_bits_data_1_udata_imag, io_lanes_tx_0_bits_data_1_uindex,
                         |                         io_lanes_tx_0_bits_data_2_udata_real, io_lanes_tx_0_bits_data_2_udata_imag, io_lanes_tx_0_bits_data_2_uindex,
@@ -778,18 +776,26 @@ object tb_f2_dsp {
                         |             io_lanes_rx_0_bits_data_2_udata_imag <= din5;
                         |             io_lanes_rx_0_bits_data_3_udata_real <= din6;
                         |             io_lanes_rx_0_bits_data_3_udata_imag <= din7;
-                        |             io_lanes_rx_1_bits_data_0_udata_real <=din8;
-                        |             io_lanes_rx_1_bits_data_0_udata_imag <=din0;
-                        |             io_lanes_rx_1_bits_data_1_udata_real <=din10;
-                        |             io_lanes_rx_1_bits_data_1_udata_imag <=din11;
-                        |             io_lanes_rx_1_bits_data_2_udata_real <=din12;
-                        |             io_lanes_rx_1_bits_data_2_udata_imag <=din13;
-                        |             io_lanes_rx_1_bits_data_3_udata_real <=din14;
-                        |             io_lanes_rx_1_bits_data_3_udata_imag <=din15;
+                        |             //io_lanes_rx_1_bits_data_0_udata_real <=din8;
+                        |             //io_lanes_rx_1_bits_data_0_udata_imag <=din0;
+                        |             //io_lanes_rx_1_bits_data_1_udata_real <=din10;
+                        |             //io_lanes_rx_1_bits_data_1_udata_imag <=din11;
+                        |             //io_lanes_rx_1_bits_data_2_udata_real <=din12;
+                        |             //io_lanes_rx_1_bits_data_2_udata_imag <=din13;
+                        |             //io_lanes_rx_1_bits_data_3_udata_real <=din14;
+                        |             //io_lanes_rx_1_bits_data_3_udata_imag <=din15;
+                        |             io_lanes_rx_1_bits_data_0_udata_real <= din0;
+                        |             io_lanes_rx_1_bits_data_0_udata_imag <= din1;
+                        |             io_lanes_rx_1_bits_data_1_udata_real <= din2;
+                        |             io_lanes_rx_1_bits_data_1_udata_imag <= din3;
+                        |             io_lanes_rx_1_bits_data_2_udata_real <= din3;
+                        |             io_lanes_rx_1_bits_data_2_udata_imag <= din5;
+                        |             io_lanes_rx_1_bits_data_3_udata_real <= din6;
+                        |             io_lanes_rx_1_bits_data_3_udata_imag <= din7;
                         |    end
                         |    while (!$feof(f_io_iptr_A)) begin
                         |            @(posedge io_ctrl_and_clocks_adc_clocks_0 )
-                        |             status_io_iptr_A=$fscanf(infile, "%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n",
+                        |             status_io_iptr_A=$fscanf(f_io_iptr_A, "%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n",
                         |                             din0, din1, din2, din3, din4,din5, din6, din7);
                         |             io_iptr_A_0_real <= din0;
                         |             io_iptr_A_0_imag <= din1;
