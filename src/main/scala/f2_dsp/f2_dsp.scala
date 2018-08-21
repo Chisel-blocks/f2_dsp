@@ -118,7 +118,8 @@ class f2_dsp_io(
          )
         val iptr_A                  = Input(Vec(antennas,DspComplex(SInt(rxinputn.W), SInt(rxinputn.W))))
         val Z                       = Output(Vec(antennas,new dac_io(thermo=thermo,bin=bin)))
-    // In SerDes TX is a input for the transmitter RX is the output of the receiver
+    // In SerDes, TX is a input for the transmitter, RX is the output of the receiver
+    // Thus, lanes_tx is an output, lanes_rx is an input
     val lanes_rx                =Vec(numserdes,Flipped(DecoupledIO(new iofifosigs(n=n,users=users))))
     val lanes_tx                =Vec(numserdes,DecoupledIO(new iofifosigs(n=n,users=users)))
     }
