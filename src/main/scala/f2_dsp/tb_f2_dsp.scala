@@ -75,8 +75,8 @@ object tb_f2_dsp {
                            //Rx parameters
                            ("g_rx_shift","0"),
                            ("g_rx_scale0","1"),
-                           ("g_rx_scale1","1"),
-                           ("g_rx_scale2","1"),
+                           ("g_rx_scale1","16"),
+                           ("g_rx_scale2","2"),
                            ("g_rx_scale3","1"),
                            ("g_rx_user_index","0"),
                            ("g_rx_antenna_index","0"),
@@ -85,7 +85,7 @@ object tb_f2_dsp {
                            ("g_rx_mode","4"),
                            ("g_rx_inv_adc_clk_pol","1"),
                            ("g_rx_adc_fifo_lut_mode","2"),
-                           ("g_lane_refclk_Ndiv","16"),
+                           ("g_lane_refclk_Ndiv","2"),
                            ("g_lane_refclk_shift","0")
                            )
 
@@ -93,7 +93,7 @@ object tb_f2_dsp {
             //("None","None","None","None","None","None")
             val ioseq=Seq( 
                           ("reg","asyncResetIn_clockRef","None","None","None",1),
-                          ("wire","lane_clkrst_clockRef","None","None","None","None"),
+                          ("wire","lane_clockRef","None","None","None","None"),
                           ("reg","lane_clkrst_asyncResetIn","None","None","None",1),
                           ("reg","lane_refclk_Ndiv",7,0,"None","g_lane_refclk_Ndiv"),
                           ("reg","lane_refclk_reset","None","None","None",1),
@@ -108,6 +108,7 @@ object tb_f2_dsp {
                           ("in","io_ctrl_and_clocks_rx_reset_clkdiv","None","None","None",1),
                           ("in","io_ctrl_and_clocks_rx_clkdiv_shift",1,0,"None","g_rx_shift"),
                           ("reg","reset_loop","None","None","None",1),
+                          ("reg","reset_clock_div","None","None","None",1),
                           ("reset","reset","None","None","None",1),
                           ("in","clock","None","None","None","None"),
                           ("in","io_iptr_A_0_real",rx.inbits-1,0,"None","'b0"),
@@ -164,25 +165,25 @@ object tb_f2_dsp {
                           ("in","io_ctrl_and_clocks_dac_data_mode_1",tx.dacdatamodebits-1,0,"None","g_tx_dac_data_mode"),
                           ("in","io_ctrl_and_clocks_dac_data_mode_2",tx.dacdatamodebits-1,0,"None","g_tx_dac_data_mode"),
                           ("in","io_ctrl_and_clocks_dac_data_mode_3",tx.dacdatamodebits-1,0,"None","g_tx_dac_data_mode"),
-                          ("in","io_ctrl_and_clocks_dac_lut_write_addr_0",tx.outbits-1,0,"None","None"),
-                          ("in","io_ctrl_and_clocks_dac_lut_write_addr_1",tx.outbits-1,0,"None","None"),
-                          ("in","io_ctrl_and_clocks_dac_lut_write_addr_2",tx.outbits-1,0,"None","None"),
-                          ("in","io_ctrl_and_clocks_dac_lut_write_addr_3",tx.outbits-1,0,"None","None"),
-                          ("in","io_ctrl_and_clocks_dac_lut_write_vals_0_real",tx.outbits-1,0,"None","None"),
-                          ("in","io_ctrl_and_clocks_dac_lut_write_vals_0_imag",tx.outbits-1,0,"None","None"),
-                          ("in","io_ctrl_and_clocks_dac_lut_write_vals_1_real",tx.outbits-1,0,"None","None"),
-                          ("in","io_ctrl_and_clocks_dac_lut_write_vals_1_imag",tx.outbits-1,0,"None","None"),
-                          ("in","io_ctrl_and_clocks_dac_lut_write_vals_2_real",tx.outbits-1,0,"None","None"),
-                          ("in","io_ctrl_and_clocks_dac_lut_write_vals_2_imag",tx.outbits-1,0,"None","None"),
-                          ("in","io_ctrl_and_clocks_dac_lut_write_vals_3_real",tx.outbits-1,0,"None","None"),
-                          ("in","io_ctrl_and_clocks_dac_lut_write_vals_3_imag",tx.outbits-1,0,"None","None"),
-                          ("in","io_ctrl_and_clocks_dac_lut_write_en_0","None","None","None","None"),
-                          ("in","io_ctrl_and_clocks_dac_lut_write_en_1","None","None","None","None"),
-                          ("in","io_ctrl_and_clocks_dac_lut_write_en_2","None","None","None","None"),
-                          ("in","io_ctrl_and_clocks_dac_lut_write_en_3","None","None","None","None"),
+                          ("in","io_ctrl_and_clocks_dac_lut_write_addr_0",tx.outbits-1,0,"None",0),
+                          ("in","io_ctrl_and_clocks_dac_lut_write_addr_1",tx.outbits-1,0,"None",0),
+                          ("in","io_ctrl_and_clocks_dac_lut_write_addr_2",tx.outbits-1,0,"None",0),
+                          ("in","io_ctrl_and_clocks_dac_lut_write_addr_3",tx.outbits-1,0,"None",0),
+                          ("in","io_ctrl_and_clocks_dac_lut_write_vals_0_real",tx.outbits-1,0,"None",0),
+                          ("in","io_ctrl_and_clocks_dac_lut_write_vals_0_imag",tx.outbits-1,0,"None",0),
+                          ("in","io_ctrl_and_clocks_dac_lut_write_vals_1_real",tx.outbits-1,0,"None",0),
+                          ("in","io_ctrl_and_clocks_dac_lut_write_vals_1_imag",tx.outbits-1,0,"None",0),
+                          ("in","io_ctrl_and_clocks_dac_lut_write_vals_2_real",tx.outbits-1,0,"None",0),
+                          ("in","io_ctrl_and_clocks_dac_lut_write_vals_2_imag",tx.outbits-1,0,"None",0),
+                          ("in","io_ctrl_and_clocks_dac_lut_write_vals_3_real",tx.outbits-1,0,"None",0),
+                          ("in","io_ctrl_and_clocks_dac_lut_write_vals_3_imag",tx.outbits-1,0,"None",0),
+                          ("in","io_ctrl_and_clocks_dac_lut_write_en_0","None","None","None",0),
+                          ("in","io_ctrl_and_clocks_dac_lut_write_en_1","None","None","None",0),
+                          ("in","io_ctrl_and_clocks_dac_lut_write_en_2","None","None","None",0),
+                          ("in","io_ctrl_and_clocks_dac_lut_write_en_3","None","None","None",0),
                           // In SerDes, TX is a input for the transmitter, RX is the output of the receiver
                           // Thus, lanes_tx is an output, lanes_rx is an input
-                          ("in","io_lanes_tx_0_ready","None","None","None","None"),
+                          ("in","io_lanes_tx_0_ready","None","None","None","'b1"),
                           ("out","io_lanes_tx_0_valid","None","None","None","None"),
                           ("out","io_lanes_tx_0_bits_data_0_udata_real",tx.inbits-1,0,"None","None"),
                           ("out","io_lanes_tx_0_bits_data_0_udata_imag",tx.inbits-1,0,"None","None"),
@@ -197,7 +198,7 @@ object tb_f2_dsp {
                           ("out","io_lanes_tx_0_bits_data_3_udata_imag",tx.inbits-1,0,"None","None"),
                           ("out","io_lanes_tx_0_bits_data_3_uindex",uindexbits-1,0,"None","None"),
                           ("out","io_lanes_tx_0_bits_rxindex",rxindexbits-1,0,"None","None"),
-                          ("in","io_lanes_tx_1_ready","None","None","None","None"),
+                          ("in","io_lanes_tx_1_ready","None","None","None","'b1"),
                           ("out","io_lanes_tx_1_valid","None","None","None","None"),
                           ("out","io_lanes_tx_1_bits_data_0_udata_real",tx.inbits-1,0,"None","None"),
                           ("out","io_lanes_tx_1_bits_data_0_udata_imag",tx.inbits-1,0,"None","None"),
@@ -213,35 +214,35 @@ object tb_f2_dsp {
                           ("out","io_lanes_tx_1_bits_data_3_uindex",uindexbits-1,0,"None","None"),
                           ("out","io_lanes_tx_1_bits_rxindex",rxindexbits-1,0,"None","None"),
                           ("out","io_lanes_rx_0_ready","None","None","None","None"),
-                          ("in","io_lanes_rx_0_valid","None","None","None","None"),
-                          ("in","io_lanes_rx_0_bits_data_0_udata_real",tx.inbits-1,0,"None","None"),
-                          ("in","io_lanes_rx_0_bits_data_0_udata_imag",tx.inbits-1,0,"None","None"),
-                          ("in","io_lanes_rx_0_bits_data_0_uindex",uindexbits-1,0,"None","None"),
-                          ("in","io_lanes_rx_0_bits_data_1_udata_real",tx.inbits-1,0,"None","None"),
-                          ("in","io_lanes_rx_0_bits_data_1_udata_imag",tx.inbits-1,0,"None","None"),
-                          ("in","io_lanes_rx_0_bits_data_1_uindex",uindexbits-1,0,"None","None"),
-                          ("in","io_lanes_rx_0_bits_data_2_udata_real",tx.inbits-1,0,"None","None"),
-                          ("in","io_lanes_rx_0_bits_data_2_udata_imag",tx.inbits-1,0,"None","None"),
-                          ("in","io_lanes_rx_0_bits_data_2_uindex",uindexbits-1,0,"None","None"),
-                          ("in","io_lanes_rx_0_bits_data_3_udata_real",tx.inbits-1,0,"None","None"),
-                          ("in","io_lanes_rx_0_bits_data_3_udata_imag",tx.inbits-1,0,"None","None"),
-                          ("in","io_lanes_rx_0_bits_data_3_uindex",uindexbits-1,0,"None","None"),
-                          ("in","io_lanes_rx_0_bits_rxindex",rxindexbits-1,0,"None","None"),
+                          ("in","io_lanes_rx_0_valid","None","None","None","'b1"),
+                          ("in","io_lanes_rx_0_bits_data_0_udata_real",tx.inbits-1,0,"None","'b0"),
+                          ("in","io_lanes_rx_0_bits_data_0_udata_imag",tx.inbits-1,0,"None","'b0"),
+                          ("in","io_lanes_rx_0_bits_data_0_uindex",uindexbits-1,0,"None","'b0"),
+                          ("in","io_lanes_rx_0_bits_data_1_udata_real",tx.inbits-1,0,"None","'b0"),
+                          ("in","io_lanes_rx_0_bits_data_1_udata_imag",tx.inbits-1,0,"None","'b0"),
+                          ("in","io_lanes_rx_0_bits_data_1_uindex",uindexbits-1,0,"None","'b0"),
+                          ("in","io_lanes_rx_0_bits_data_2_udata_real",tx.inbits-1,0,"None","'b0"),
+                          ("in","io_lanes_rx_0_bits_data_2_udata_imag",tx.inbits-1,0,"None","'b0"),
+                          ("in","io_lanes_rx_0_bits_data_2_uindex",uindexbits-1,0,"None","'b0"),
+                          ("in","io_lanes_rx_0_bits_data_3_udata_real",tx.inbits-1,0,"None","'b0"),
+                          ("in","io_lanes_rx_0_bits_data_3_udata_imag",tx.inbits-1,0,"None","'b0"),
+                          ("in","io_lanes_rx_0_bits_data_3_uindex",uindexbits-1,0,"None","'b0"),
+                          ("in","io_lanes_rx_0_bits_rxindex",rxindexbits-1,0,"None","'b0"),
                           ("out","io_lanes_rx_1_ready","None","None","None","None"),
-                          ("in","io_lanes_rx_1_valid","None","None","None","None"),
-                          ("in","io_lanes_rx_1_bits_data_0_udata_real",tx.inbits-1,0,"None","None"),
-                          ("in","io_lanes_rx_1_bits_data_0_udata_imag",tx.inbits-1,0,"None","None"),
-                          ("in","io_lanes_rx_1_bits_data_0_uindex",uindexbits-1,0,"None","None"),
-                          ("in","io_lanes_rx_1_bits_data_1_udata_real",tx.inbits-1,0,"None","None"),
-                          ("in","io_lanes_rx_1_bits_data_1_udata_imag",tx.inbits-1,0,"None","None"),
-                          ("in","io_lanes_rx_1_bits_data_1_uindex",uindexbits-1,0,"None","None"),
-                          ("in","io_lanes_rx_1_bits_data_2_udata_real",tx.inbits-1,0,"None","None"),
-                          ("in","io_lanes_rx_1_bits_data_2_udata_imag",tx.inbits-1,0,"None","None"),
-                          ("in","io_lanes_rx_1_bits_data_2_uindex",uindexbits-1,0,"None","None"),
-                          ("in","io_lanes_rx_1_bits_data_3_udata_real",tx.inbits-1,0,"None","None"),
-                          ("in","io_lanes_rx_1_bits_data_3_udata_imag",tx.inbits-1,0,"None","None"),
-                          ("in","io_lanes_rx_1_bits_data_3_uindex",uindexbits-1,0,"None","None"),
-                          ("in","io_lanes_rx_1_bits_rxindex",rxindexbits-1,0,"None","None"),
+                          ("in","io_lanes_rx_1_valid","None","None","None","'b1"),
+                          ("in","io_lanes_rx_1_bits_data_0_udata_real",tx.inbits-1,0,"None","'b0"),
+                          ("in","io_lanes_rx_1_bits_data_0_udata_imag",tx.inbits-1,0,"None","'b0"),
+                          ("in","io_lanes_rx_1_bits_data_0_uindex",uindexbits-1,0,"None","'b0"),
+                          ("in","io_lanes_rx_1_bits_data_1_udata_real",tx.inbits-1,0,"None","'b0"),
+                          ("in","io_lanes_rx_1_bits_data_1_udata_imag",tx.inbits-1,0,"None","'b0"),
+                          ("in","io_lanes_rx_1_bits_data_1_uindex",uindexbits-1,0,"None","'b0"),
+                          ("in","io_lanes_rx_1_bits_data_2_udata_real",tx.inbits-1,0,"None","'b0"),
+                          ("in","io_lanes_rx_1_bits_data_2_udata_imag",tx.inbits-1,0,"None","'b0"),
+                          ("in","io_lanes_rx_1_bits_data_2_uindex",uindexbits-1,0,"None","'b0"),
+                          ("in","io_lanes_rx_1_bits_data_3_udata_real",tx.inbits-1,0,"None","'b0"),
+                          ("in","io_lanes_rx_1_bits_data_3_udata_imag",tx.inbits-1,0,"None","'b0"),
+                          ("in","io_lanes_rx_1_bits_data_3_uindex",uindexbits-1,0,"None","'b0"),
+                          ("in","io_lanes_rx_1_bits_rxindex",rxindexbits-1,0,"None","'b0"),
                           ("in","io_ctrl_and_clocks_tx_user_delays_0_0",tx.txuserdelaybits-1,0,"None",0),
                           ("in","io_ctrl_and_clocks_tx_user_delays_0_1",tx.txuserdelaybits-1,0,"None",0),
                           ("in","io_ctrl_and_clocks_tx_user_delays_0_2",tx.txuserdelaybits-1,0,"None",0),
@@ -263,37 +264,37 @@ object tb_f2_dsp {
                           ("in","io_ctrl_and_clocks_tx_fine_delays_2",tx.txfinedelaybits-1,0,"None",0),
                           ("in","io_ctrl_and_clocks_tx_fine_delays_3",tx.txfinedelaybits-1,0,"None",0),
                           ("in","io_ctrl_and_clocks_tx_user_weights_0_0_real",tx.txweightbits-1,0,"None",1),
-                          ("in","io_ctrl_and_clocks_tx_user_weights_0_0_imag",tx.txweightbits-1,0,"None",0),
+                          ("in","io_ctrl_and_clocks_tx_user_weights_0_0_imag",tx.txweightbits-1,0,"None",1),
                           ("in","io_ctrl_and_clocks_tx_user_weights_0_1_real",tx.txweightbits-1,0,"None",1),
-                          ("in","io_ctrl_and_clocks_tx_user_weights_0_1_imag",tx.txweightbits-1,0,"None",0),
+                          ("in","io_ctrl_and_clocks_tx_user_weights_0_1_imag",tx.txweightbits-1,0,"None",1),
                           ("in","io_ctrl_and_clocks_tx_user_weights_0_2_real",tx.txweightbits-1,0,"None",1),
-                          ("in","io_ctrl_and_clocks_tx_user_weights_0_2_imag",tx.txweightbits-1,0,"None",0),
+                          ("in","io_ctrl_and_clocks_tx_user_weights_0_2_imag",tx.txweightbits-1,0,"None",1),
                           ("in","io_ctrl_and_clocks_tx_user_weights_0_3_real",tx.txweightbits-1,0,"None",1),
-                          ("in","io_ctrl_and_clocks_tx_user_weights_0_3_imag",tx.txweightbits-1,0,"None",0),
+                          ("in","io_ctrl_and_clocks_tx_user_weights_0_3_imag",tx.txweightbits-1,0,"None",1),
                           ("in","io_ctrl_and_clocks_tx_user_weights_1_0_real",tx.txweightbits-1,0,"None",1),
-                          ("in","io_ctrl_and_clocks_tx_user_weights_1_0_imag",tx.txweightbits-1,0,"None",0),
+                          ("in","io_ctrl_and_clocks_tx_user_weights_1_0_imag",tx.txweightbits-1,0,"None",1),
                           ("in","io_ctrl_and_clocks_tx_user_weights_1_1_real",tx.txweightbits-1,0,"None",1),
-                          ("in","io_ctrl_and_clocks_tx_user_weights_1_1_imag",tx.txweightbits-1,0,"None",0),
+                          ("in","io_ctrl_and_clocks_tx_user_weights_1_1_imag",tx.txweightbits-1,0,"None",1),
                           ("in","io_ctrl_and_clocks_tx_user_weights_1_2_real",tx.txweightbits-1,0,"None",1),
-                          ("in","io_ctrl_and_clocks_tx_user_weights_1_2_imag",tx.txweightbits-1,0,"None",0),
+                          ("in","io_ctrl_and_clocks_tx_user_weights_1_2_imag",tx.txweightbits-1,0,"None",1),
                           ("in","io_ctrl_and_clocks_tx_user_weights_1_3_real",tx.txweightbits-1,0,"None",1),
-                          ("in","io_ctrl_and_clocks_tx_user_weights_1_3_imag",tx.txweightbits-1,0,"None",0),
+                          ("in","io_ctrl_and_clocks_tx_user_weights_1_3_imag",tx.txweightbits-1,0,"None",1),
                           ("in","io_ctrl_and_clocks_tx_user_weights_2_0_real",tx.txweightbits-1,0,"None",1),
-                          ("in","io_ctrl_and_clocks_tx_user_weights_2_0_imag",tx.txweightbits-1,0,"None",0),
+                          ("in","io_ctrl_and_clocks_tx_user_weights_2_0_imag",tx.txweightbits-1,0,"None",1),
                           ("in","io_ctrl_and_clocks_tx_user_weights_2_1_real",tx.txweightbits-1,0,"None",1),
-                          ("in","io_ctrl_and_clocks_tx_user_weights_2_1_imag",tx.txweightbits-1,0,"None",0),
+                          ("in","io_ctrl_and_clocks_tx_user_weights_2_1_imag",tx.txweightbits-1,0,"None",1),
                           ("in","io_ctrl_and_clocks_tx_user_weights_2_2_real",tx.txweightbits-1,0,"None",1),
-                          ("in","io_ctrl_and_clocks_tx_user_weights_2_2_imag",tx.txweightbits-1,0,"None",0),
+                          ("in","io_ctrl_and_clocks_tx_user_weights_2_2_imag",tx.txweightbits-1,0,"None",1),
                           ("in","io_ctrl_and_clocks_tx_user_weights_2_3_real",tx.txweightbits-1,0,"None",1),
-                          ("in","io_ctrl_and_clocks_tx_user_weights_2_3_imag",tx.txweightbits-1,0,"None",0),
+                          ("in","io_ctrl_and_clocks_tx_user_weights_2_3_imag",tx.txweightbits-1,0,"None",1),
                           ("in","io_ctrl_and_clocks_tx_user_weights_3_0_real",tx.txweightbits-1,0,"None",1),
-                          ("in","io_ctrl_and_clocks_tx_user_weights_3_0_imag",tx.txweightbits-1,0,"None",0),
+                          ("in","io_ctrl_and_clocks_tx_user_weights_3_0_imag",tx.txweightbits-1,0,"None",1),
                           ("in","io_ctrl_and_clocks_tx_user_weights_3_1_real",tx.txweightbits-1,0,"None",1),
-                          ("in","io_ctrl_and_clocks_tx_user_weights_3_1_imag",tx.txweightbits-1,0,"None",0),
+                          ("in","io_ctrl_and_clocks_tx_user_weights_3_1_imag",tx.txweightbits-1,0,"None",1),
                           ("in","io_ctrl_and_clocks_tx_user_weights_3_2_real",tx.txweightbits-1,0,"None",1),
-                          ("in","io_ctrl_and_clocks_tx_user_weights_3_2_imag",tx.txweightbits-1,0,"None",0),
+                          ("in","io_ctrl_and_clocks_tx_user_weights_3_2_imag",tx.txweightbits-1,0,"None",1),
                           ("in","io_ctrl_and_clocks_tx_user_weights_3_3_real",tx.txweightbits-1,0,"None",1),
-                          ("in","io_ctrl_and_clocks_tx_user_weights_3_3_imag",tx.txweightbits-1,0,"None",0),
+                          ("in","io_ctrl_and_clocks_tx_user_weights_3_3_imag",tx.txweightbits-1,0,"None",1),
                           ("out","io_Z_0_real_b",tx.bin-1,0,"None","None"),
                           ("out","io_Z_0_real_t",scala.math.pow(2,tx.thermo).toInt-2,0,"None","None"),
                           ("out","io_Z_0_imag_b",tx.bin-1,0,"None","None"),
@@ -348,16 +349,17 @@ object tb_f2_dsp {
                           ("in","io_ctrl_and_clocks_inv_adc_clk_pol_1","None","None","None","g_rx_inv_adc_clk_pol"),
                           ("in","io_ctrl_and_clocks_inv_adc_clk_pol_2","None","None","None","g_rx_inv_adc_clk_pol"),
                           ("in","io_ctrl_and_clocks_inv_adc_clk_pol_3","None","None","None","g_rx_inv_adc_clk_pol"),
-                          ("in","io_ctrl_and_clocks_adc_lut_write_addr",rx.adc_lut_width-1,0,"None","None"),
-                          ("in","io_ctrl_and_clocks_adc_lut_write_vals_0_real",rx.adc_lut_width-1,0,"None","None"),
-                          ("in","io_ctrl_and_clocks_adc_lut_write_vals_1_real",rx.adc_lut_width-1,0,"None","None"),
-                          ("in","io_ctrl_and_clocks_adc_lut_write_vals_2_real",rx.adc_lut_width-1,0,"None","None"),
-                          ("in","io_ctrl_and_clocks_adc_lut_write_vals_3_real",rx.adc_lut_width-1,0,"None","None"),
-                          ("in","io_ctrl_and_clocks_adc_lut_write_vals_0_imag",rx.adc_lut_width-1,0,"None","None"),
-                          ("in","io_ctrl_and_clocks_adc_lut_write_vals_1_imag",rx.adc_lut_width-1,0,"None","None"),
-                          ("in","io_ctrl_and_clocks_adc_lut_write_vals_2_imag",rx.adc_lut_width-1,0,"None","None"),
-                          ("in","io_ctrl_and_clocks_adc_lut_write_vals_3_imag",rx.adc_lut_width-1,0,"None","None"),
+                          ("in","io_ctrl_and_clocks_adc_lut_write_addr",rx.adc_lut_width-1,0,"None",0),
+                          ("in","io_ctrl_and_clocks_adc_lut_write_vals_0_real",rx.adc_lut_width-1,0,"None",0),
+                          ("in","io_ctrl_and_clocks_adc_lut_write_vals_1_real",rx.adc_lut_width-1,0,"None",0),
+                          ("in","io_ctrl_and_clocks_adc_lut_write_vals_2_real",rx.adc_lut_width-1,0,"None",0),
+                          ("in","io_ctrl_and_clocks_adc_lut_write_vals_3_real",rx.adc_lut_width-1,0,"None",0),
+                          ("in","io_ctrl_and_clocks_adc_lut_write_vals_0_imag",rx.adc_lut_width-1,0,"None",0),
+                          ("in","io_ctrl_and_clocks_adc_lut_write_vals_1_imag",rx.adc_lut_width-1,0,"None",0),
+                          ("in","io_ctrl_and_clocks_adc_lut_write_vals_2_imag",rx.adc_lut_width-1,0,"None",0),
+                          ("in","io_ctrl_and_clocks_adc_lut_write_vals_3_imag",rx.adc_lut_width-1,0,"None",0),
                           ("in","io_ctrl_and_clocks_adc_lut_write_en","None","None","None",0),
+                          ("in","io_ctrl_and_clocks_adc_lut_reset","None","None","None",1),
 
                           // user_delays
                           ("in","io_ctrl_and_clocks_rx_user_delays_0_0",rx.delay_width-1,0,"None","'b0"),
@@ -436,7 +438,7 @@ object tb_f2_dsp {
                           ("in","io_ctrl_and_clocks_neighbour_delays_3_3",rx.delay_width-1,0,"None","'b0"),
                           //Serdes test stuff
                           ("out","io_ctrl_and_clocks_from_serdes_scan_0_ready","None","None","None","None"),
-                          ("in","io_ctrl_and_clocks_from_serdes_scan_0_valid","None","None","None","'b0"),
+                          ("in","io_ctrl_and_clocks_from_serdes_scan_0_valid","None","None","None","'b1"),
                           ("in","io_ctrl_and_clocks_from_serdes_scan_0_bits_data_0_udata_real",15,0,"None","'b0"),
                           ("in","io_ctrl_and_clocks_from_serdes_scan_0_bits_data_0_udata_imag",15,0,"None","'b0"),
                           ("in","io_ctrl_and_clocks_from_serdes_scan_0_bits_data_0_uindex",1,0,"None","'b0"),
@@ -451,7 +453,7 @@ object tb_f2_dsp {
                           ("in","io_ctrl_and_clocks_from_serdes_scan_0_bits_data_3_uindex",1,0,"None","'b0"),
                           ("in","io_ctrl_and_clocks_from_serdes_scan_0_bits_rxindex",1,0,"None","'b0"),
                           ("out","io_ctrl_and_clocks_from_serdes_scan_1_ready","None","None","None","None"),
-                          ("in","io_ctrl_and_clocks_from_serdes_scan_1_valid","None","None","None","'b0"),
+                          ("in","io_ctrl_and_clocks_from_serdes_scan_1_valid","None","None","None","'b1"),
                           ("in","io_ctrl_and_clocks_from_serdes_scan_1_bits_data_0_udata_real",15,0,"None","'b0"),
                           ("in","io_ctrl_and_clocks_from_serdes_scan_1_bits_data_0_udata_imag",15,0,"None","'b0"),
                           ("in","io_ctrl_and_clocks_from_serdes_scan_1_bits_data_0_uindex",1,0,"None","'b0"),
@@ -466,7 +468,7 @@ object tb_f2_dsp {
                           ("in","io_ctrl_and_clocks_from_serdes_scan_1_bits_data_3_uindex",1,0,"None","'b0"),
                           ("in","io_ctrl_and_clocks_from_serdes_scan_1_bits_rxindex",1,0,"None","'b0"),
                           ("out","io_ctrl_and_clocks_from_dsp_scan_0_ready","None","None","None","None"),
-                          ("in","io_ctrl_and_clocks_from_dsp_scan_0_valid","None","None","None","'b0"),
+                          ("in","io_ctrl_and_clocks_from_dsp_scan_0_valid","None","None","None","'b1"),
                           ("in","io_ctrl_and_clocks_from_dsp_scan_0_bits_data_0_udata_real",15,0,"None","'b0"),
                           ("in","io_ctrl_and_clocks_from_dsp_scan_0_bits_data_0_udata_imag",15,0,"None","'b0"),
                           ("in","io_ctrl_and_clocks_from_dsp_scan_0_bits_data_0_uindex",1,0,"None","'b0"),
@@ -481,7 +483,7 @@ object tb_f2_dsp {
                           ("in","io_ctrl_and_clocks_from_dsp_scan_0_bits_data_3_uindex",1,0,"None","'b0"),
                           ("in","io_ctrl_and_clocks_from_dsp_scan_0_bits_rxindex",1,0,"None","'b0"),
                           ("out","io_ctrl_and_clocks_from_dsp_scan_1_ready","None","None","None","None"),
-                          ("in","io_ctrl_and_clocks_from_dsp_scan_1_valid","None","None","None","'b0"),
+                          ("in","io_ctrl_and_clocks_from_dsp_scan_1_valid","None","None","None","'b1"),
                           ("in","io_ctrl_and_clocks_from_dsp_scan_1_bits_data_0_udata_real",15,0,"None","'b0"),
                           ("in","io_ctrl_and_clocks_from_dsp_scan_1_bits_data_0_udata_imag",15,0,"None","'b0"),
                           ("in","io_ctrl_and_clocks_from_dsp_scan_1_bits_data_0_uindex",1,0,"None","'b0"),
@@ -503,14 +505,14 @@ object tb_f2_dsp {
                           ("in","io_ctrl_and_clocks_serdes_to_dsp_address_3","None","None","None","'b0"),
                           ("in","io_ctrl_and_clocks_serdes_to_dsp_address_4","None","None","None","'b0"),
                           ("in","io_ctrl_and_clocks_serdes_to_dsp_address_5","None","None","None","'b0"),
-                          ("in","io_ctrl_and_clocks_to_serdes_mode_0",1,0,"None","'b0"),
-                          ("in","io_ctrl_and_clocks_to_serdes_mode_1",1,0,"None","'b0"),
-                          ("in","io_ctrl_and_clocks_to_dsp_mode_0",1,0,"None","'b0"),
-                          ("in","io_ctrl_and_clocks_to_dsp_mode_1",1,0,"None","'b0"),
-                          ("in","io_ctrl_and_clocks_to_dsp_mode_2",1,0,"None","'b0"),
-                          ("in","io_ctrl_and_clocks_to_dsp_mode_3",1,0,"None","'b0"),
-                          ("in","io_ctrl_and_clocks_to_dsp_mode_4",1,0,"None","'b0"),
-                          ("in","io_ctrl_and_clocks_to_dsp_mode_5",1,0,"None","'b0"),
+                          ("in","io_ctrl_and_clocks_to_serdes_mode_0",1,0,"None","'b1"),
+                          ("in","io_ctrl_and_clocks_to_serdes_mode_1",1,0,"None","'b1"),
+                          ("in","io_ctrl_and_clocks_to_dsp_mode_0",1,0,"None","'b1"),
+                          ("in","io_ctrl_and_clocks_to_dsp_mode_1",1,0,"None","'b1"),
+                          ("in","io_ctrl_and_clocks_to_dsp_mode_2",1,0,"None","'b1"),
+                          ("in","io_ctrl_and_clocks_to_dsp_mode_3",1,0,"None","'b1"),
+                          ("in","io_ctrl_and_clocks_to_dsp_mode_4",1,0,"None","'b1"),
+                          ("in","io_ctrl_and_clocks_to_dsp_mode_5",1,0,"None","'b1"),
                           ("in","io_ctrl_and_clocks_serdestest_scan_write_mode",1,0,"None","'b0"),
                           ("in","io_ctrl_and_clocks_serdestest_scan_write_address",12,0,"None","'b0"),
                           ("in","io_ctrl_and_clocks_serdestest_scan_write_value_data_0_udata_real",15,0,"None","'b0"),
@@ -626,8 +628,8 @@ object tb_f2_dsp {
         val textTemplate=header+ extpars+"""
                         |//timescale 1ps this should probably be a global model parameter 
                         |parameter integer c_Ts=1/(g_Rs_high*1e-12);
-                        |parameter tx_c_ratio=g_Rs_high/g_Rs_low;
-                        |parameter rx_c_ratio=g_Rs_high/g_Rs_low;
+                        |parameter tx_c_ratio=g_Rs_high/(8*g_Rs_low);
+                        |parameter rx_c_ratio=g_Rs_high/(8*g_Rs_low);
                         |parameter RESET_TIME = 128*c_Ts; // initially 16
                         |
                         |""".stripMargin('|')+regdef+wiredef+assdef+iofiledef+
@@ -635,6 +637,7 @@ object tb_f2_dsp {
                         |
                         |integer din0, din1,din2,din3,din4,din5,din6,din7;
                         |integer din8, din9,din10,din11,din12,din13,din14,din15;
+                        |integer din16, din17,din18,din19,din20,din21,din22,din23;
                         |integer memaddrcount;
                         |integer initdone;
                         |
@@ -649,7 +652,7 @@ object tb_f2_dsp {
                         |always @(posedge io_ctrl_and_clocks_dac_clocks_0 && (initdone==1)) begin 
                         |    //Print only valid values 
                         |    if (~$isunknown(io_Z_0_real_t) ) begin
-                        |        $fwrite(f_io_Z, "%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n", 
+                        |        $fwrite(f_io_Z, "%b\t%d\t%b\t%d\t%b\t%d\t%b\t%d\t%b\t%d\t%b\t%d\t%b\t%d\t%b\t%d\n", 
                         |                         io_Z_0_real_t, io_Z_0_real_b, 
                         |                         io_Z_0_imag_t, io_Z_0_imag_b, 
                         |                         io_Z_1_real_t, io_Z_1_real_b, 
@@ -660,11 +663,22 @@ object tb_f2_dsp {
                         |                         io_Z_3_imag_t, io_Z_3_imag_b); 
                         |    end
                         |    else begin
-                        |         $display( $time, "Dropping invalid output values at ");
+                        |         $display( $time, "Dropping invalid output values at io_Z ");
+                        |        $fwrite(f_io_Z, "%b\t%d\t%b\t%d\t%b\t%d\t%b\t%d\t%b\t%d\t%b\t%d\t%b\t%d\t%b\t%d\n", 
+                        |                         0, 0, 
+                        |                         0, 0, 
+                        |                         0, 0, 
+                        |                         0, 0, 
+                        |                         0, 0, 
+                        |                         0, 0, 
+                        |                         0, 0, 
+                        |                         0, 0); 
                         |    end 
                         |end
                         |//Rx_io
-                        |always @(posedge io_ctrl_and_clocks_dac_clocks_0 && (initdone==1)) begin 
+                        |
+                        |//Mimic the reading to lanes
+                        |always @(posedge lane_clockRef && (io_lanes_tx_0_valid==1) &&  (initdone==1) ) begin 
                         |    //Print only valid values 
                         |    if (~$isunknown(io_lanes_tx_0_bits_data_0_udata_real) ) begin
                         |        $fwrite(f_io_lanes_tx, "%d\t%d\t%d %d\t%d\t%d%d\t%d\t%d%d\t%d\t%d%d\t%d\t%d%d\t%d\t%d%d\t%d\t%d%d\t%d\t%d\n", 
@@ -678,14 +692,23 @@ object tb_f2_dsp {
                         |                         io_lanes_tx_1_bits_data_3_udata_real, io_lanes_tx_1_bits_data_3_udata_imag, io_lanes_tx_1_bits_data_3_uindex);
                         |    end
                         |    else begin
-                        |         $display( $time, "Dropping invalid output values at ");
+                        |        $display( $time, "Dropping invalid output values at io_lanes_tx");
+                        |        $fwrite(f_io_lanes_tx, "%d\t%d\t%d %d\t%d\t%d%d\t%d\t%d%d\t%d\t%d%d\t%d\t%d%d\t%d\t%d%d\t%d\t%d%d\t%d\t%d\n", 
+                        |                         0, 0, 0,
+                        |                         0, 0, 0,
+                        |                         0, 0, 0,
+                        |                         0, 0, 0,
+                        |                         0, 0, 0,
+                        |                         0, 0, 0,
+                        |                         0, 0, 0,
+                        |                         0, 0, 0);
                         |    end 
                         |end
                         |
                         |//Clock divider model
                         |clkdiv_n_2_4_8 clkrefdiv( // @[:@3.2]
                         |  .clock(clock), // @[:@4.4]
-                        |  .reset(reset), // @[:@5.4] // used to be reset
+                        |  .reset(reset_clock_div), // @[:@5.4] // used to be reset
                         |  .io_Ndiv(lane_refclk_Ndiv), // @[:@6.4]
                         |  .io_shift(lane_refclk_shift), // @[:@6.4]
                         |  .io_reset_clk(lane_refclk_reset), // @[:@6.4]
@@ -698,19 +721,23 @@ object tb_f2_dsp {
                         |""".stripMargin('|')+dutdef+initialdef+
                         """
                         |    #(RESET_TIME)
-                        |    reset=0;
-                        |    #(2*RESET_TIME)
+                        |    reset_clock_div=0;
+                        |    io_ctrl_and_clocks_tx_reset_clkdiv=0;
+                        |    io_ctrl_and_clocks_rx_reset_clkdiv=0;
                         |    lane_refclk_reset=0;
-                        |    #(3*RESET_TIME)
-                        |    memaddrcount=0;
                         |    io_ctrl_and_clocks_reset_dacfifo=0;
-                        |    io_ctrl_and_clocks_reset_adcfifo=0;
-                        |    #(200*RESET_TIME)
+                        |    io_ctrl_and_clocks_reset_outfifo=0;
+                        |    io_ctrl_and_clocks_reset_infifo=0;
+                        |    #(2*RESET_TIME)
+                        |    reset=0;
+                        |    #(16*RESET_TIME)
                         |    reset_loop=0;
+                        |    io_ctrl_and_clocks_reset_adcfifo=0;
+                        |    memaddrcount=0;
                         |//Init the LUT
                         |    
                         |    while (memaddrcount<2**9) begin
-                        |       @(posedge clock) 
+                        |       @(posedge lane_clockRef) 
                         |       io_ctrl_and_clocks_dac_lut_write_en_0<=1;
                         |       io_ctrl_and_clocks_dac_lut_write_en_1<=1;
                         |       io_ctrl_and_clocks_dac_lut_write_en_2<=1;
@@ -753,7 +780,7 @@ object tb_f2_dsp {
                         |       io_ctrl_and_clocks_adc_lut_write_vals_1_imag<=memaddrcount;
                         |       io_ctrl_and_clocks_adc_lut_write_vals_2_imag<=memaddrcount;
                         |       io_ctrl_and_clocks_adc_lut_write_vals_3_imag<=memaddrcount;
-                        |       @(posedge clock) 
+                        |       @(posedge lane_clockRef) 
                         |       memaddrcount=memaddrcount+1;
                         |       io_ctrl_and_clocks_dac_lut_write_en_0<=0;
                         |       io_ctrl_and_clocks_dac_lut_write_en_1<=0;
@@ -761,51 +788,46 @@ object tb_f2_dsp {
                         |       io_ctrl_and_clocks_dac_lut_write_en_3<=0;
                         |       io_ctrl_and_clocks_adc_lut_write_en<=0;
                         |    end
+                        |    io_ctrl_and_clocks_adc_lut_reset<=0;
                         |    initdone=1;
-                        |    while (!$feof(f_io_lanes_rx)) begin
-                        |            @(posedge lane_clockRef )
-                        |             status_io_lanes_rx=$fscanf(f_io_lanes_rx, "%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n",
-                        |                             din0, din1, din2, din3, din4,din5, din6, din7,
-                        |                             din8, din9, din10, din11, din12,din13, din14, din15
-                        |                             );
-                        |             io_lanes_rx_0_bits_data_0_udata_real <= din0;
-                        |             io_lanes_rx_0_bits_data_0_udata_imag <= din1;
-                        |             io_lanes_rx_0_bits_data_1_udata_real <= din2;
-                        |             io_lanes_rx_0_bits_data_1_udata_imag <= din3;
-                        |             io_lanes_rx_0_bits_data_2_udata_real <= din3;
-                        |             io_lanes_rx_0_bits_data_2_udata_imag <= din5;
-                        |             io_lanes_rx_0_bits_data_3_udata_real <= din6;
-                        |             io_lanes_rx_0_bits_data_3_udata_imag <= din7;
-                        |             //io_lanes_rx_1_bits_data_0_udata_real <=din8;
-                        |             //io_lanes_rx_1_bits_data_0_udata_imag <=din0;
-                        |             //io_lanes_rx_1_bits_data_1_udata_real <=din10;
-                        |             //io_lanes_rx_1_bits_data_1_udata_imag <=din11;
-                        |             //io_lanes_rx_1_bits_data_2_udata_real <=din12;
-                        |             //io_lanes_rx_1_bits_data_2_udata_imag <=din13;
-                        |             //io_lanes_rx_1_bits_data_3_udata_real <=din14;
-                        |             //io_lanes_rx_1_bits_data_3_udata_imag <=din15;
-                        |             io_lanes_rx_1_bits_data_0_udata_real <= din0;
-                        |             io_lanes_rx_1_bits_data_0_udata_imag <= din1;
-                        |             io_lanes_rx_1_bits_data_1_udata_real <= din2;
-                        |             io_lanes_rx_1_bits_data_1_udata_imag <= din3;
-                        |             io_lanes_rx_1_bits_data_2_udata_real <= din3;
-                        |             io_lanes_rx_1_bits_data_2_udata_imag <= din5;
-                        |             io_lanes_rx_1_bits_data_3_udata_real <= din6;
-                        |             io_lanes_rx_1_bits_data_3_udata_imag <= din7;
-                        |    end
-                        |    while (!$feof(f_io_iptr_A)) begin
-                        |            @(posedge io_ctrl_and_clocks_adc_clocks_0 )
-                        |             status_io_iptr_A=$fscanf(f_io_iptr_A, "%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n",
-                        |                             din0, din1, din2, din3, din4,din5, din6, din7);
-                        |             io_iptr_A_0_real <= din0;
-                        |             io_iptr_A_0_imag <= din1;
-                        |             io_iptr_A_1_real <= din2;
-                        |             io_iptr_A_1_imag <= din3;
-                        |             io_iptr_A_2_real <= din4;
-                        |             io_iptr_A_2_imag <= din5;
-                        |             io_iptr_A_3_real <= din6;
-                        |             io_iptr_A_3_imag <= din7;
-                        |    end
+                        |    fork
+                        |        while (!$feof(f_io_lanes_rx)) begin
+                        |                @(posedge lane_clockRef )
+                        |                 status_io_lanes_rx=$fscanf(f_io_lanes_rx, "%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n",
+                        |                                 din0, din1, din2, din3, din4, din5, din6, din7,
+                        |                                 din8, din9, din10, din11, din12, din13, din14, din15
+                        |                                 );
+                        |                 io_lanes_rx_0_bits_data_0_udata_real <= din0;
+                        |                 io_lanes_rx_0_bits_data_0_udata_imag <= din1;
+                        |                 io_lanes_rx_0_bits_data_1_udata_real <= din2;
+                        |                 io_lanes_rx_0_bits_data_1_udata_imag <= din3;
+                        |                 io_lanes_rx_0_bits_data_2_udata_real <= din4;
+                        |                 io_lanes_rx_0_bits_data_2_udata_imag <= din5;
+                        |                 io_lanes_rx_0_bits_data_3_udata_real <= din6;
+                        |                 io_lanes_rx_0_bits_data_3_udata_imag <= din7;
+                        |                 io_lanes_rx_1_bits_data_0_udata_real <=din8;
+                        |                 io_lanes_rx_1_bits_data_0_udata_imag <=din9;
+                        |                 io_lanes_rx_1_bits_data_1_udata_real <=din10;
+                        |                 io_lanes_rx_1_bits_data_1_udata_imag <=din11;
+                        |                 io_lanes_rx_1_bits_data_2_udata_real <=din12;
+                        |                 io_lanes_rx_1_bits_data_2_udata_imag <=din13;
+                        |                 io_lanes_rx_1_bits_data_3_udata_real <=din14;
+                        |                 io_lanes_rx_1_bits_data_3_udata_imag <=din15;
+                        |        end
+                        |        while (!$feof(f_io_iptr_A)) begin
+                        |                @(posedge io_ctrl_and_clocks_adc_clocks_0 )
+                        |                 status_io_iptr_A=$fscanf(f_io_iptr_A, "%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n",
+                        |                                 din16, din17, din18, din19, din20,din21, din22, din23);
+                        |                 io_iptr_A_0_real <= din16;
+                        |                 io_iptr_A_0_imag <= din17;
+                        |                 io_iptr_A_1_real <= din18;
+                        |                 io_iptr_A_1_imag <= din19;
+                        |                 io_iptr_A_2_real <= din20;
+                        |                 io_iptr_A_2_imag <= din21;
+                        |                 io_iptr_A_3_real <= din22;
+                        |                 io_iptr_A_3_imag <= din23;
+                        |        end
+                        |    join
                         |""".stripMargin('|')+iofileclose+
                         """|
                         |    $finish;

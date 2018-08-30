@@ -51,6 +51,7 @@ class f2_dsp_ctrl_io(
     val adc_lut_write_addr      = Input(UInt(rxinputn.W))
     val adc_lut_write_vals      = Input(Vec(antennas,DspComplex(SInt(rxinputn.W), SInt(rxinputn.W))))
     val adc_lut_write_en        = Input(Bool())
+    val adc_lut_reset           = Input(Bool())
     val from_serdes_scan        = Vec(numserdes,Flipped(DecoupledIO(new iofifosigs(n=n))))
     val from_dsp_scan           = Vec(numserdes,Flipped(DecoupledIO(new iofifosigs(n=n))))
     val dsp_to_serdes_address   = Vec(numserdes,Input(UInt(log2Ceil(neighbours+2).W)))
@@ -189,8 +190,8 @@ class f2_dsp (
      rxdsp.clock_symrate                 :=rxclkdiv.clkp8n.asClock
      rxdsp.clock_symratex4               :=rxclkdiv.clkp2n.asClock
      //Check clocking
-     rxdsp.clock_infifo_enq.map(_<>rxclkdiv.clkp8n.asClock)
-     rxdsp.clock_outfifo_deq<>rxclkdiv.clkp2n.asClock
+     rxdsp.clock_infifo_enq.map(_<>rxclkdiv.clkp8n.asClock) //symrate
+     rxdsp.clock_outfifo_deq<>rxclkdiv.clkp2n.asClock  //4xsymrate
  
      // For TX, the master clock is the slowest, 
      // faster clocks are formed from the system master clock.
@@ -227,6 +228,7 @@ class f2_dsp (
      rxdsp.adc_lut_write_addr :=io.ctrl_and_clocks.adc_lut_write_addr
      rxdsp.adc_lut_write_vals :=io.ctrl_and_clocks.adc_lut_write_vals
      rxdsp.adc_lut_write_en   :=io.ctrl_and_clocks.adc_lut_write_en
+     rxdsp.adc_lut_reset      :=io.ctrl_and_clocks.adc_lut_reset
      rxdsp.rx_user_delays     :=io.ctrl_and_clocks.rx_user_delays
      rxdsp.rx_fine_delays     :=io.ctrl_and_clocks.rx_fine_delays
      rxdsp.rx_user_weights    :=io.ctrl_and_clocks.rx_user_weights
