@@ -123,6 +123,7 @@ class f2_dsp_io(
     // Thus, lanes_tx is an output, lanes_rx is an input
     val lanes_rx                =Vec(numserdes,Flipped(DecoupledIO(new iofifosigs(n=n,users=users))))
     val lanes_tx                =Vec(numserdes,DecoupledIO(new iofifosigs(n=n,users=users)))
+    val lanes_tx_deq_clock      = Output(Clock())
     }
 
 class f2_dsp (
@@ -208,7 +209,7 @@ class f2_dsp (
      txdsp.interpolator_clocks.hb1clock_high   := txclkdiv.clkp4n.asClock
      txdsp.interpolator_clocks.hb1clock_low    := txclkdiv.clkp8n.asClock
      txdsp.clock_symrate                       := txclkdiv.clkp8n.asClock
-     txdsp.clock_outfifo_deq                   := txclkdiv.clkp8n.asClock
+     io.lanes_tx_deq_clock                     := txclkdiv.clkp8n.asClock
  
      //Map io inputs
      //Rx

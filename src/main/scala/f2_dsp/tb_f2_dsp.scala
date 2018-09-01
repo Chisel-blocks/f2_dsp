@@ -183,6 +183,7 @@ object tb_f2_dsp {
                           ("in","io_ctrl_and_clocks_dac_lut_write_en_3","None","None","None",0),
                           // In SerDes, TX is a input for the transmitter, RX is the output of the receiver
                           // Thus, lanes_tx is an output, lanes_rx is an input
+                          ("out","io_lanes_tx_deq_clock","None","None","None","None"),
                           ("in","io_lanes_tx_0_ready","None","None","None","'b1"),
                           ("out","io_lanes_tx_0_valid","None","None","None","None"),
                           ("out","io_lanes_tx_0_bits_data_0_udata_real",tx.inbits-1,0,"None","None"),
@@ -639,7 +640,7 @@ object tb_f2_dsp {
                         |integer din8, din9,din10,din11,din12,din13,din14,din15;
                         |integer din16, din17,din18,din19,din20,din21,din22,din23;
                         |integer memaddrcount;
-                        |integer initdone;
+                        |integer initdone, rxdone, txdone;
                         |
                         |//Initializations
                         |initial clock = 1'b0;
@@ -649,9 +650,18 @@ object tb_f2_dsp {
                         |always #(c_Ts)clock = !clock ;
                         | 
                         |//Tx_io
-                        |always @(posedge io_ctrl_and_clocks_dac_clocks_0 && (initdone==1)) begin 
+                        |always @(posedge io_ctrl_and_clocks_dac_clocks_0 && (initdone==1) && txdone==0) begin 
                         |    //Print only valid values 
-                        |    if (~$isunknown(io_Z_0_real_t) ) begin
+                        |    if (
+                        |        ~$isunknown(io_Z_0_real_t) &&  ~$isunknown(io_Z_0_real_b) &&
+                        |        ~$isunknown(io_Z_1_real_t) &&  ~$isunknown(io_Z_1_real_b) &&
+                        |        ~$isunknown(io_Z_2_real_t) &&  ~$isunknown(io_Z_2_real_b) &&
+                        |        ~$isunknown(io_Z_3_real_t) &&  ~$isunknown(io_Z_3_real_b) &&
+                        |        ~$isunknown(io_Z_0_imag_t) &&  ~$isunknown(io_Z_0_imag_b) &&
+                        |        ~$isunknown(io_Z_1_imag_t) &&  ~$isunknown(io_Z_1_imag_b) &&
+                        |        ~$isunknown(io_Z_2_imag_t) &&  ~$isunknown(io_Z_2_imag_b) &&
+                        |        ~$isunknown(io_Z_3_imag_t) &&  ~$isunknown(io_Z_3_imag_b)
+                        |) begin
                         |        $fwrite(f_io_Z, "%b\t%d\t%b\t%d\t%b\t%d\t%b\t%d\t%b\t%d\t%b\t%d\t%b\t%d\t%b\t%d\n", 
                         |                         io_Z_0_real_t, io_Z_0_real_b, 
                         |                         io_Z_0_imag_t, io_Z_0_imag_b, 
@@ -664,24 +674,24 @@ object tb_f2_dsp {
                         |    end
                         |    else begin
                         |         $display( $time, "Dropping invalid output values at io_Z ");
-                        |        $fwrite(f_io_Z, "%b\t%d\t%b\t%d\t%b\t%d\t%b\t%d\t%b\t%d\t%b\t%d\t%b\t%d\t%b\t%d\n", 
-                        |                         0, 0, 
-                        |                         0, 0, 
-                        |                         0, 0, 
-                        |                         0, 0, 
-                        |                         0, 0, 
-                        |                         0, 0, 
-                        |                         0, 0, 
-                        |                         0, 0); 
                         |    end 
                         |end
                         |//Rx_io
                         |
                         |//Mimic the reading to lanes
-                        |always @(posedge lane_clockRef && (io_lanes_tx_0_valid==1) &&  (initdone==1) ) begin 
+                        |always @(posedge lane_clockRef && (io_lanes_tx_0_valid==1) &&  (initdone==1) && rxdone==0) begin 
                         |    //Print only valid values 
-                        |    if (~$isunknown(io_lanes_tx_0_bits_data_0_udata_real) ) begin
-                        |        $fwrite(f_io_lanes_tx, "%d\t%d\t%d %d\t%d\t%d%d\t%d\t%d%d\t%d\t%d%d\t%d\t%d%d\t%d\t%d%d\t%d\t%d%d\t%d\t%d\n", 
+                        |    if (
+                        |        ~$isunknown(io_lanes_tx_0_bits_data_0_udata_real) && ~$isunknown(io_lanes_tx_0_bits_data_0_udata_imag) && ~$isunknown(io_lanes_tx_0_bits_data_0_uindex) &&   
+                        |        ~$isunknown(io_lanes_tx_0_bits_data_1_udata_real) && ~$isunknown(io_lanes_tx_0_bits_data_1_udata_imag) && ~$isunknown(io_lanes_tx_0_bits_data_1_uindex) &&   
+                        |        ~$isunknown(io_lanes_tx_0_bits_data_2_udata_real) && ~$isunknown(io_lanes_tx_0_bits_data_2_udata_imag) && ~$isunknown(io_lanes_tx_0_bits_data_2_uindex) &&   
+                        |        ~$isunknown(io_lanes_tx_0_bits_data_3_udata_real) && ~$isunknown(io_lanes_tx_0_bits_data_3_udata_imag) && ~$isunknown(io_lanes_tx_0_bits_data_3_uindex) &&   
+                        |        ~$isunknown(io_lanes_tx_1_bits_data_0_udata_imag) && ~$isunknown(io_lanes_tx_1_bits_data_0_udata_imag) && ~$isunknown(io_lanes_tx_1_bits_data_0_uindex) &&   
+                        |        ~$isunknown(io_lanes_tx_1_bits_data_1_udata_imag) && ~$isunknown(io_lanes_tx_1_bits_data_1_udata_imag) && ~$isunknown(io_lanes_tx_1_bits_data_1_uindex) &&   
+                        |        ~$isunknown(io_lanes_tx_1_bits_data_2_udata_imag) && ~$isunknown(io_lanes_tx_1_bits_data_2_udata_imag) && ~$isunknown(io_lanes_tx_1_bits_data_2_uindex) &&   
+                        |        ~$isunknown(io_lanes_tx_1_bits_data_3_udata_imag) && ~$isunknown(io_lanes_tx_1_bits_data_3_udata_imag) && ~$isunknown(io_lanes_tx_1_bits_data_3_uindex)   
+                        |       ) begin
+                        |        $fwrite(f_io_lanes_tx, "%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n", 
                         |                         io_lanes_tx_0_bits_data_0_udata_real, io_lanes_tx_0_bits_data_0_udata_imag, io_lanes_tx_0_bits_data_0_uindex,
                         |                         io_lanes_tx_0_bits_data_1_udata_real, io_lanes_tx_0_bits_data_1_udata_imag, io_lanes_tx_0_bits_data_1_uindex,
                         |                         io_lanes_tx_0_bits_data_2_udata_real, io_lanes_tx_0_bits_data_2_udata_imag, io_lanes_tx_0_bits_data_2_uindex,
@@ -693,15 +703,6 @@ object tb_f2_dsp {
                         |    end
                         |    else begin
                         |        $display( $time, "Dropping invalid output values at io_lanes_tx");
-                        |        $fwrite(f_io_lanes_tx, "%d\t%d\t%d %d\t%d\t%d%d\t%d\t%d%d\t%d\t%d%d\t%d\t%d%d\t%d\t%d%d\t%d\t%d%d\t%d\t%d\n", 
-                        |                         0, 0, 0,
-                        |                         0, 0, 0,
-                        |                         0, 0, 0,
-                        |                         0, 0, 0,
-                        |                         0, 0, 0,
-                        |                         0, 0, 0,
-                        |                         0, 0, 0,
-                        |                         0, 0, 0);
                         |    end 
                         |end
                         |
@@ -721,6 +722,9 @@ object tb_f2_dsp {
                         |""".stripMargin('|')+dutdef+initialdef+
                         """
                         |    #(RESET_TIME)
+                        |    initdone=0;
+                        |    txdone=0;
+                        |    rxdone=0;
                         |    reset_clock_div=0;
                         |    io_ctrl_and_clocks_tx_reset_clkdiv=0;
                         |    io_ctrl_and_clocks_rx_reset_clkdiv=0;
@@ -737,7 +741,8 @@ object tb_f2_dsp {
                         |//Init the LUT
                         |    
                         |    while (memaddrcount<2**9) begin
-                        |       @(posedge lane_clockRef) 
+                        |       //This is really controlled by Scan, but we do not have scan model 
+                        |       @(posedge clkp8n) 
                         |       io_ctrl_and_clocks_dac_lut_write_en_0<=1;
                         |       io_ctrl_and_clocks_dac_lut_write_en_1<=1;
                         |       io_ctrl_and_clocks_dac_lut_write_en_2<=1;
@@ -780,7 +785,7 @@ object tb_f2_dsp {
                         |       io_ctrl_and_clocks_adc_lut_write_vals_1_imag<=memaddrcount;
                         |       io_ctrl_and_clocks_adc_lut_write_vals_2_imag<=memaddrcount;
                         |       io_ctrl_and_clocks_adc_lut_write_vals_3_imag<=memaddrcount;
-                        |       @(posedge lane_clockRef) 
+                        |       @(posedge clkp8n) 
                         |       memaddrcount=memaddrcount+1;
                         |       io_ctrl_and_clocks_dac_lut_write_en_0<=0;
                         |       io_ctrl_and_clocks_dac_lut_write_en_1<=0;
@@ -789,32 +794,36 @@ object tb_f2_dsp {
                         |       io_ctrl_and_clocks_adc_lut_write_en<=0;
                         |    end
                         |    io_ctrl_and_clocks_adc_lut_reset<=0;
-                        |    initdone=1;
+                        |    initdone<=1;
                         |    fork
                         |        while (!$feof(f_io_lanes_rx)) begin
-                        |                @(posedge lane_clockRef )
-                        |                 status_io_lanes_rx=$fscanf(f_io_lanes_rx, "%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n",
-                        |                                 din0, din1, din2, din3, din4, din5, din6, din7,
-                        |                                 din8, din9, din10, din11, din12, din13, din14, din15
-                        |                                 );
-                        |                 io_lanes_rx_0_bits_data_0_udata_real <= din0;
-                        |                 io_lanes_rx_0_bits_data_0_udata_imag <= din1;
-                        |                 io_lanes_rx_0_bits_data_1_udata_real <= din2;
-                        |                 io_lanes_rx_0_bits_data_1_udata_imag <= din3;
-                        |                 io_lanes_rx_0_bits_data_2_udata_real <= din4;
-                        |                 io_lanes_rx_0_bits_data_2_udata_imag <= din5;
-                        |                 io_lanes_rx_0_bits_data_3_udata_real <= din6;
-                        |                 io_lanes_rx_0_bits_data_3_udata_imag <= din7;
-                        |                 io_lanes_rx_1_bits_data_0_udata_real <=din8;
-                        |                 io_lanes_rx_1_bits_data_0_udata_imag <=din9;
-                        |                 io_lanes_rx_1_bits_data_1_udata_real <=din10;
-                        |                 io_lanes_rx_1_bits_data_1_udata_imag <=din11;
-                        |                 io_lanes_rx_1_bits_data_2_udata_real <=din12;
-                        |                 io_lanes_rx_1_bits_data_2_udata_imag <=din13;
-                        |                 io_lanes_rx_1_bits_data_3_udata_real <=din14;
-                        |                 io_lanes_rx_1_bits_data_3_udata_imag <=din15;
+                        |                txdone<=0;
+                        |                //Lane output fifo is red by the symrate clock
+                        |                @(posedge io_lanes_tx_deq_clock )
+                        |                status_io_lanes_rx=$fscanf(f_io_lanes_rx, "%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n",
+                        |                                din0, din1, din2, din3, din4, din5, din6, din7,
+                        |                                din8, din9, din10, din11, din12, din13, din14, din15
+                        |                                );
+                        |                io_lanes_rx_0_bits_data_0_udata_real <= din0;
+                        |                io_lanes_rx_0_bits_data_0_udata_imag <= din1;
+                        |                io_lanes_rx_0_bits_data_1_udata_real <= din2;
+                        |                io_lanes_rx_0_bits_data_1_udata_imag <= din3;
+                        |                io_lanes_rx_0_bits_data_2_udata_real <= din4;
+                        |                io_lanes_rx_0_bits_data_2_udata_imag <= din5;
+                        |                io_lanes_rx_0_bits_data_3_udata_real <= din6;
+                        |                io_lanes_rx_0_bits_data_3_udata_imag <= din7;
+                        |                io_lanes_rx_1_bits_data_0_udata_real <=din8;
+                        |                io_lanes_rx_1_bits_data_0_udata_imag <=din9;
+                        |                io_lanes_rx_1_bits_data_1_udata_real <=din10;
+                        |                io_lanes_rx_1_bits_data_1_udata_imag <=din11;
+                        |                io_lanes_rx_1_bits_data_2_udata_real <=din12;
+                        |                io_lanes_rx_1_bits_data_2_udata_imag <=din13;
+                        |                io_lanes_rx_1_bits_data_3_udata_real <=din14;
+                        |                io_lanes_rx_1_bits_data_3_udata_imag <=din15;
+                        |                txdone<=1;
                         |        end
                         |        while (!$feof(f_io_iptr_A)) begin
+                        |                rxdone<=0;
                         |                @(posedge io_ctrl_and_clocks_adc_clocks_0 )
                         |                 status_io_iptr_A=$fscanf(f_io_iptr_A, "%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n",
                         |                                 din16, din17, din18, din19, din20,din21, din22, din23);
@@ -826,6 +835,7 @@ object tb_f2_dsp {
                         |                 io_iptr_A_2_imag <= din21;
                         |                 io_iptr_A_3_real <= din22;
                         |                 io_iptr_A_3_imag <= din23;
+                        |                 rxdone<=1;
                         |        end
                         |    join
                         |""".stripMargin('|')+iofileclose+
