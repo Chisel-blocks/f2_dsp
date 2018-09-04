@@ -41,6 +41,7 @@ object tb_f2_dsp {
                  val n = 16
                  val inbits=9
                  val gainbits= 10
+                 val integshiftbits=5
                  val decimator_modebits= 3
                  val rx_output_modebits= 3
                  val input_modebits= 3
@@ -78,6 +79,7 @@ object tb_f2_dsp {
                            ("g_rx_scale1","16"),
                            ("g_rx_scale2","2"),
                            ("g_rx_scale3","1"),
+                           ("g_rx_cic3shift","4"),
                            ("g_rx_user_index","0"),
                            ("g_rx_antenna_index","0"),
                            ("g_rx_output_mode","0"),
@@ -126,7 +128,7 @@ object tb_f2_dsp {
                           ("in","io_ctrl_and_clocks_interpolator_controls_0_hb3scale",tx.scalebits-1,0,"None","g_tx_scale2"),
                           ("in","io_ctrl_and_clocks_interpolator_controls_0_mode",tx.interpmodebits-1,0,"None","g_tx_interpolator_mode"),
                           ("in","io_ctrl_and_clocks_interpolator_controls_0_reset_loop","None","None","reset_loop","None"),
-                          ("in","io_ctrl_and_clocks_interpolator_controls_1_cic3derivscale",tx.scalebits-1,0,"None","g_tx_scale3"),
+                          ("in","io_ctrl_and_clocks_interpolator_controls_1_cic4derivscale",tx.scalebits-1,0,"None","g_tx_scale3"),
                           ("in","io_ctrl_and_clocks_interpolator_controls_1_cic3derivshift",tx.derivshiftbits-1,0,"None","g_tx_cic3shift"),
                           ("in","io_ctrl_and_clocks_interpolator_controls_1_hb1scale",tx.scalebits-1,0,"None","g_tx_scale0"),
                           ("in","io_ctrl_and_clocks_interpolator_controls_1_hb2scale",tx.scalebits-1,0,"None","g_tx_scale1"),
@@ -314,21 +316,25 @@ object tb_f2_dsp {
                           ("out","io_Z_3_imag_t",scala.math.pow(2,tx.thermo).toInt-2,0,"None","None"),
                           //RX starts here
                           ("in","io_ctrl_and_clocks_decimator_controls_0_cic3integscale",rx.gainbits-1,0,"None","g_rx_scale0"),
+                          ("in","io_ctrl_and_clocks_decimator_controls_0_cic3integshift",rx.integshiftbits-1,0,"None","g_tx_cic3shift"),
                           ("in","io_ctrl_and_clocks_decimator_controls_0_hb1scale",rx.gainbits-1,0,"None","g_rx_scale1"),
                           ("in","io_ctrl_and_clocks_decimator_controls_0_hb2scale",rx.gainbits-1,0,"None","g_rx_scale2"),
                           ("in","io_ctrl_and_clocks_decimator_controls_0_hb3scale",rx.gainbits-1,0,"None","g_rx_scale3"),
                           ("in","io_ctrl_and_clocks_decimator_controls_0_mode",rx.decimator_modebits-1,0,"None","g_rx_mode"),
                           ("in","io_ctrl_and_clocks_decimator_controls_1_cic3integscale",rx.gainbits-1,0,"None","g_rx_scale0"),
+                          ("in","io_ctrl_and_clocks_decimator_controls_1_cic3integshift",rx.integshiftbits-1,0,"None","g_tx_cic3shift"),
                           ("in","io_ctrl_and_clocks_decimator_controls_1_hb1scale",rx.gainbits-1,0,"None","g_rx_scale1"),
                           ("in","io_ctrl_and_clocks_decimator_controls_1_hb2scale",rx.gainbits-1,0,"None","g_rx_scale2"),
                           ("in","io_ctrl_and_clocks_decimator_controls_1_hb3scale",rx.gainbits-1,0,"None","g_rx_scale3"),
                           ("in","io_ctrl_and_clocks_decimator_controls_1_mode",rx.decimator_modebits-1,0,"None","g_rx_mode"),
-                          ("in","io_ctrl_and_clocks_decimator_controls_2_cic3integscale",rx.gainbits-1,0,"None","g_rx_scale1"),
+                          ("in","io_ctrl_and_clocks_decimator_controls_2_cic3integscale",rx.gainbits-1,0,"None","g_rx_scale0"),
+                          ("in","io_ctrl_and_clocks_decimator_controls_2_cic3integshift",rx.integshiftbits-1,0,"None","g_tx_cic3shift"),
                           ("in","io_ctrl_and_clocks_decimator_controls_2_hb1scale",rx.gainbits-1,0,"None","g_rx_scale1"),
                           ("in","io_ctrl_and_clocks_decimator_controls_2_hb2scale",rx.gainbits-1,0,"None","g_rx_scale2"),
                           ("in","io_ctrl_and_clocks_decimator_controls_2_hb3scale",rx.gainbits-1,0,"None","g_rx_scale3"),
                           ("in","io_ctrl_and_clocks_decimator_controls_2_mode",rx.decimator_modebits-1,0,"None","g_rx_mode"),
                           ("in","io_ctrl_and_clocks_decimator_controls_3_cic3integscale",rx.gainbits-1,0,"None","g_rx_scale0"),
+                          ("in","io_ctrl_and_clocks_decimator_controls_3_cic3integshift",rx.integshiftbits-1,0,"None","g_tx_cic3shift"),
                           ("in","io_ctrl_and_clocks_decimator_controls_3_hb1scale",rx.gainbits-1,0,"None","g_rx_scale1"),
                           ("in","io_ctrl_and_clocks_decimator_controls_3_hb2scale",rx.gainbits-1,0,"None","g_rx_scale2"),
                           ("in","io_ctrl_and_clocks_decimator_controls_3_hb3scale",rx.gainbits-1,0,"None","g_rx_scale3"),
@@ -647,12 +653,12 @@ object tb_f2_dsp {
                         |initial reset = 1'b0;
                         |
                         |//Clock definitions
-                        |always #(c_Ts)clock = !clock ;
+                        |always #(c_Ts/2.0) clock = !clock ;
                         | 
                         |//Tx_io
-                        |always @(posedge io_ctrl_and_clocks_dac_clocks_0 && (initdone==1) && txdone==0) begin 
+                        |always @(posedge io_ctrl_and_clocks_dac_clocks_0 ) begin 
                         |    //Print only valid values 
-                        |    if (
+                        |    if ((initdone==1) && txdone==0 &&                                                                   
                         |        ~$isunknown(io_Z_0_real_t) &&  ~$isunknown(io_Z_0_real_b) &&
                         |        ~$isunknown(io_Z_1_real_t) &&  ~$isunknown(io_Z_1_real_b) &&
                         |        ~$isunknown(io_Z_2_real_t) &&  ~$isunknown(io_Z_2_real_b) &&
@@ -672,16 +678,17 @@ object tb_f2_dsp {
                         |                         io_Z_3_real_t, io_Z_3_real_b, 
                         |                         io_Z_3_imag_t, io_Z_3_imag_b); 
                         |    end
-                        |    else begin
-                        |         $display( $time, "Dropping invalid output values at io_Z ");
-                        |    end 
+                        |    //else begin
+                        |         //$display( $time, "Dropping invalid output values at io_Z ");
+                        |    //end 
                         |end
                         |//Rx_io
                         |
                         |//Mimic the reading to lanes
-                        |always @(posedge lane_clockRef && (io_lanes_tx_0_valid==1) &&  (initdone==1) && rxdone==0) begin 
+                        |always @(posedge lane_clockRef ) begin 
                         |    //Print only valid values 
                         |    if (
+                        |        (io_lanes_tx_0_valid==1) &&  (initdone==1) && rxdone==0 &&
                         |        ~$isunknown(io_lanes_tx_0_bits_data_0_udata_real) && ~$isunknown(io_lanes_tx_0_bits_data_0_udata_imag) && ~$isunknown(io_lanes_tx_0_bits_data_0_uindex) &&   
                         |        ~$isunknown(io_lanes_tx_0_bits_data_1_udata_real) && ~$isunknown(io_lanes_tx_0_bits_data_1_udata_imag) && ~$isunknown(io_lanes_tx_0_bits_data_1_uindex) &&   
                         |        ~$isunknown(io_lanes_tx_0_bits_data_2_udata_real) && ~$isunknown(io_lanes_tx_0_bits_data_2_udata_imag) && ~$isunknown(io_lanes_tx_0_bits_data_2_uindex) &&   
@@ -691,19 +698,32 @@ object tb_f2_dsp {
                         |        ~$isunknown(io_lanes_tx_1_bits_data_2_udata_imag) && ~$isunknown(io_lanes_tx_1_bits_data_2_udata_imag) && ~$isunknown(io_lanes_tx_1_bits_data_2_uindex) &&   
                         |        ~$isunknown(io_lanes_tx_1_bits_data_3_udata_imag) && ~$isunknown(io_lanes_tx_1_bits_data_3_udata_imag) && ~$isunknown(io_lanes_tx_1_bits_data_3_uindex)   
                         |       ) begin
-                        |        $fwrite(f_io_lanes_tx, "%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n", 
-                        |                         io_lanes_tx_0_bits_data_0_udata_real, io_lanes_tx_0_bits_data_0_udata_imag, io_lanes_tx_0_bits_data_0_uindex,
-                        |                         io_lanes_tx_0_bits_data_1_udata_real, io_lanes_tx_0_bits_data_1_udata_imag, io_lanes_tx_0_bits_data_1_uindex,
-                        |                         io_lanes_tx_0_bits_data_2_udata_real, io_lanes_tx_0_bits_data_2_udata_imag, io_lanes_tx_0_bits_data_2_uindex,
-                        |                         io_lanes_tx_0_bits_data_3_udata_real, io_lanes_tx_0_bits_data_3_udata_imag, io_lanes_tx_0_bits_data_3_uindex,
-                        |                         io_lanes_tx_1_bits_data_0_udata_real, io_lanes_tx_1_bits_data_0_udata_imag, io_lanes_tx_1_bits_data_0_uindex,
-                        |                         io_lanes_tx_1_bits_data_1_udata_real, io_lanes_tx_1_bits_data_1_udata_imag, io_lanes_tx_1_bits_data_1_uindex,
-                        |                         io_lanes_tx_1_bits_data_2_udata_real, io_lanes_tx_1_bits_data_2_udata_imag, io_lanes_tx_1_bits_data_2_uindex,
-                        |                         io_lanes_tx_1_bits_data_3_udata_real, io_lanes_tx_1_bits_data_3_udata_imag, io_lanes_tx_1_bits_data_3_uindex);
+                        |        //$fwrite(f_io_lanes_tx, "%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n", 
+                        |        //$display( $time, "Printing output values at io_lanes_tx");
+                        |        $fwrite(f_io_lanes_tx, "%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n", 
+                        |                         io_lanes_tx_0_bits_data_0_udata_real, io_lanes_tx_0_bits_data_0_udata_imag,
+                        |                         io_lanes_tx_0_bits_data_1_udata_real, io_lanes_tx_0_bits_data_1_udata_imag,
+                        |                         io_lanes_tx_0_bits_data_2_udata_real, io_lanes_tx_0_bits_data_2_udata_imag,
+                        |                         io_lanes_tx_0_bits_data_3_udata_real, io_lanes_tx_0_bits_data_3_udata_imag
+                        |                         );
+                        |                         //io_lanes_tx_1_bits_data_0_udata_real, io_lanes_tx_1_bits_data_0_udata_imag,
+                        |                         //io_lanes_tx_1_bits_data_1_udata_real, io_lanes_tx_1_bits_data_1_udata_imag,
+                        |                         //io_lanes_tx_1_bits_data_2_udata_real, io_lanes_tx_1_bits_data_2_udata_imag,
+                        |                         //io_lanes_tx_1_bits_data_3_udata_real, io_lanes_tx_1_bits_data_3_udata_imag
+                        |                         //);
+                        |       // $fwrite(f_io_lanes_tx, "%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n", 
+                        |       //                  io_lanes_tx_0_bits_data_0_udata_real, io_lanes_tx_0_bits_data_0_udata_imag, io_lanes_tx_0_bits_data_0_uindex,
+                        |       //                  io_lanes_tx_0_bits_data_1_udata_real, io_lanes_tx_0_bits_data_1_udata_imag, io_lanes_tx_0_bits_data_1_uindex,
+                        |       //                  io_lanes_tx_0_bits_data_2_udata_real, io_lanes_tx_0_bits_data_2_udata_imag, io_lanes_tx_0_bits_data_2_uindex,
+                        |       //                  io_lanes_tx_0_bits_data_3_udata_real, io_lanes_tx_0_bits_data_3_udata_imag, io_lanes_tx_0_bits_data_3_uindex,
+                        |       //                  io_lanes_tx_1_bits_data_0_udata_real, io_lanes_tx_1_bits_data_0_udata_imag, io_lanes_tx_1_bits_data_0_uindex,
+                        |       //                  io_lanes_tx_1_bits_data_1_udata_real, io_lanes_tx_1_bits_data_1_udata_imag, io_lanes_tx_1_bits_data_1_uindex,
+                        |       //                  io_lanes_tx_1_bits_data_2_udata_real, io_lanes_tx_1_bits_data_2_udata_imag, io_lanes_tx_1_bits_data_2_uindex,
+                        |       //                  io_lanes_tx_1_bits_data_3_udata_real, io_lanes_tx_1_bits_data_3_udata_imag, io_lanes_tx_1_bits_data_3_uindex);
                         |    end
-                        |    else begin
-                        |        $display( $time, "Dropping invalid output values at io_lanes_tx");
-                        |    end 
+                        |    //else begin
+                        |    //    $display( $time, "Dropping invalid output values at io_lanes_tx");
+                        |    //end 
                         |end
                         |
                         |//Clock divider model

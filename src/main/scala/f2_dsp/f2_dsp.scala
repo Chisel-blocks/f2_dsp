@@ -37,7 +37,7 @@ class f2_dsp_ctrl_io(
         val neighbours         : Int=4,
         val serdestestmemsize  : Int=scala.math.pow(2,13).toInt
     ) extends Bundle {
-    val decimator_controls      = Vec(antennas,new f2_decimator_controls(gainbits=10))
+    val decimator_controls      = Vec(antennas,new f2_decimator_controls(resolution=resolution,gainbits=10))
     val adc_clocks              = Input(Vec(antennas,Clock()))
     val user_index              = Input(UInt(log2Ceil(users).W)) //W should be log2 of users
     val antenna_index           = Input(UInt(log2Ceil(antennas).W)) //W should be log2 of users
