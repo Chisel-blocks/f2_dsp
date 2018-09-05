@@ -123,7 +123,10 @@ class f2_dsp_io(
     // Thus, lanes_tx is an output, lanes_rx is an input
     val lanes_rx                =Vec(numserdes,Flipped(DecoupledIO(new iofifosigs(n=n,users=users))))
     val lanes_tx                =Vec(numserdes,DecoupledIO(new iofifosigs(n=n,users=users)))
-    val lanes_tx_deq_clock      = Output(Clock())
+    val lanes_rx_deq_clock      = Output(Clock())  // rx refers to rx of the serdes
+                                                   // read samples from lanes_rx to RF transmitter
+    val lanes_tx_enq_clock      = Input(Clock())  // Tx refers to serdes tx. 
+                                                  // reads samples from RF receiveer  
     }
 
 class f2_dsp (
@@ -192,7 +195,7 @@ class f2_dsp (
      rxdsp.clock_symratex4               :=rxclkdiv.clkp2n.asClock
      //Check clocking
      rxdsp.clock_infifo_enq.map(_<>rxclkdiv.clkp8n.asClock) //symrate
-     rxdsp.clock_outfifo_deq<>rxclkdiv.clkp2n.asClock  //4xsymrate
+     rxdsp.clock_outfifo_deq<>io.lanes_tx_enq_clock   //Should be faster than 4xsymrate
  
      // For TX, the master clock is the slowest, 
      // faster clocks are formed from the system master clock.
@@ -209,7 +212,7 @@ class f2_dsp (
      txdsp.interpolator_clocks.hb1clock_high   := txclkdiv.clkp4n.asClock
      txdsp.interpolator_clocks.hb1clock_low    := txclkdiv.clkp8n.asClock
      txdsp.clock_symrate                       := txclkdiv.clkp8n.asClock
-     io.lanes_tx_deq_clock                     := txclkdiv.clkp8n.asClock
+     io.lanes_rx_deq_clock                     := txclkdiv.clkp8n.asClock
  
      //Map io inputs
      //Rx
@@ -234,6 +237,7 @@ class f2_dsp (
      rxdsp.rx_fine_delays     :=io.ctrl_and_clocks.rx_fine_delays
      rxdsp.rx_user_weights    :=io.ctrl_and_clocks.rx_user_weights
      rxdsp.neighbour_delays   :=io.ctrl_and_clocks.neighbour_delays
+     rxdsp.clock_outfifo_deq  :=io.lanes_tx_enq_clock
      //Tx
      txdsp.interpolator_controls <> io.ctrl_and_clocks.interpolator_controls
      txdsp.dac_clocks         <> io.ctrl_and_clocks.dac_clocks

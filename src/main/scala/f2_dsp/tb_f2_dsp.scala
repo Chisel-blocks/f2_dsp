@@ -148,7 +148,8 @@ object tb_f2_dsp {
                           // In SerDes, TX is a input for the transmitter, RX is the output of the receiver
                           // Thus, lanes_tx is an output, lanes_rx is an input
                           ioseq++=Seq(
-                              ("out","io_lanes_tx_deq_clock","None","None","None","None")
+                              ("out","io_lanes_rx_deq_clock","None","None","None","None"),
+                              ("in","io_lanes_tx_enq_clock","None","None","lane_clockRef","None")
                           )
 
                           //Serdes tx lanes
@@ -586,7 +587,7 @@ object tb_f2_dsp {
                         |        while (!$feof(f_io_lanes_rx)) begin
                         |                txdone<=0;
                         |                //Lane output fifo is red by the symrate clock
-                        |                @(posedge io_lanes_tx_deq_clock )
+                        |                @(posedge io_lanes_rx_deq_clock )
                         |                status_io_lanes_rx=$fscanf(f_io_lanes_rx, "%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n",
                         |                                din0, din1, din2, din3, din4, din5, din6, din7,
                         |                                din8, din9, din10, din11, din12, din13, din14, din15

@@ -1,7 +1,7 @@
 // This is the module containing the f2_dsp and the serdes lanes
 // Initially written by Marko Kosunen and Paul Rigge, May 2018
 //
-// Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 10.08.2018 13:50
+// Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 04.09.2018 21:32
 /////////////////////////////////////////////////////////////////////////////
 package f2_dsp_and_serdes
 import chisel3._
@@ -151,6 +151,7 @@ class f2_dsp_and_serdes (
     dsp.ctrl_and_clocks<>io.dsp_ctrl_and_clocks
     dsp.iptr_A<>io.iptr_A
     dsp.Z<>io.Z
+    dsp.lanes_tx_enq_clock:=clkrefdiv.clkpn.asClock
     
 
     ////////////////////////////////////////////////////////////////////////
