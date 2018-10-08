@@ -348,6 +348,13 @@ class f2_dsp (
    //Connect switchbox to SerDes
    (lanes,switchbox.to_serdes).zipped.map(_.io.data.tx<>_)
    (lanes,switchbox.from_serdes).zipped.map(_.io.data.rx<>_)
+   
+   //Connect analog lane ios
+   (lanes,io.laneanalog).zipped.map(_.io.rx_n<>_.rx_n)
+   (lanes,io.laneanalog).zipped.map(_.io.tx_n<>_.tx_n)
+   (lanes,io.laneanalog).zipped.map(_.io.rx_p<>_.rx_p)
+   (lanes,io.laneanalog).zipped.map(_.io.tx_p<>_.tx_p)
+
 }
 //This gives you verilog
 object f2_dsp extends App {
