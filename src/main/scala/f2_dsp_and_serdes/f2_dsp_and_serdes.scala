@@ -1,7 +1,7 @@
 // This is the module containing the f2_dsp and the serdes lanes
 // Initially written by Marko Kosunen and Paul Rigge, May 2018
 //
-// Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 04.09.2018 21:32
+// Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 15.10.2018 11:29
 /////////////////////////////////////////////////////////////////////////////
 package f2_dsp_and_serdes
 import chisel3._
@@ -242,6 +242,12 @@ class f2_dsp_and_serdes (
    //Connect switchbox to SerDes
    (lanes,dsp.lanes_tx).zipped.map(_.io.data.tx<>_)
    (lanes,dsp.lanes_rx).zipped.map(_.io.data.rx<>_)
+
+   //Connect analog lane ios
+   (lanes,io.laneanalog).zipped.map(_.io.rx.n<>_.rx_n)
+   (lanes,io.laneanalog).zipped.map(_.io.tx.n<>_.tx_n)
+   (lanes,io.laneanalog).zipped.map(_.io.rx.p<>_.rx_p)
+   (lanes,io.laneanalog).zipped.map(_.io.tx.p<>_.tx_p)
 }
 //This gives you verilog
 object f2_dsp_and_serdes extends App {
