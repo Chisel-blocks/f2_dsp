@@ -1,7 +1,7 @@
 // This is the module containing the f2_dsp and the serdes lanes
 // Initially written by Marko Kosunen and Paul Rigge, May 2018
 //
-// Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 15.10.2018 11:29
+// Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 18.10.2018 19:08
 /////////////////////////////////////////////////////////////////////////////
 package f2_dsp_and_serdes
 import chisel3._
@@ -24,7 +24,7 @@ import f2_serdes_test._
 import clkdiv_n_2_4_8._
 
 class lane_clock_and_reset extends Bundle {
-    val clockRef                = Input(Clock())
+    val clockRef                = Input(Clock())  
     val asyncResetIn            = Input(Bool())
 }
 
@@ -70,10 +70,10 @@ class f2_dsp_and_serdes_io(
             serdestestmemsize=serdestestmemsize
         )
     
-    val lane_clkrst             = Vec(numserdes,new lane_clock_and_reset())
-    val lane_refclk_Ndiv        = Input(UInt(8.W))
-    val lane_refclk_reset       = Input(Bool())
-    val lane_refclk_shift       = Input(Bool())
+    val lane_refclk_and_reset  = Vec(numserdes,new lane_clock_and_reset())
+    val lane_clock_Ndiv        = Input(UInt(8.W))
+    val lane_clock_reset       = Input(Bool())
+    val lane_clock_shift       = Input(Bool())
     val laneanalog              = Vec(numserdes,new laneioanalog())
 }
 
@@ -120,10 +120,10 @@ class f2_dsp_and_serdes (
    
 
     // clock divider
-    val clkrefdiv = Module ( new clkdiv_n_2_4_8 ( n=8) ).io
-    clkrefdiv.Ndiv     :=io.lane_refclk_Ndiv
-    clkrefdiv.reset_clk:=io.lane_refclk_reset
-    clkrefdiv.shift    :=io.lane_refclk_shift
+    val lane_clock_div = Module ( new clkdiv_n_2_4_8 ( n=8) ).io //This clock is to provide programmable dequeue clock 
+    lane_clock_div.Ndiv     :=io.lane_clock_Ndiv
+    lane_clock_div.reset_clk:=io.lane_clock_reset
+    lane_clock_div.shift    :=io.lane_clock_shift
 
 
     // RX:s
@@ -151,7 +151,7 @@ class f2_dsp_and_serdes (
     dsp.ctrl_and_clocks<>io.dsp_ctrl_and_clocks
     dsp.iptr_A<>io.iptr_A
     dsp.Z<>io.Z
-    dsp.lanes_tx_enq_clock:=clkrefdiv.clkpn.asClock
+    dsp.lanes_tx_enq_clock:=lane_clock_div.clkpn.asClock
     
 
     ////////////////////////////////////////////////////////////////////////
@@ -160,8 +160,10 @@ class f2_dsp_and_serdes (
     implicit val c=SerDesConfig()
     implicit val b=BertConfig()
     implicit val m=PatternMemConfig()
-    val lanes  = Seq.fill(numserdes){ Module (
+    val lanes  = Seq.fill(numserdes){ withClock(lane_clock_div.clkpn.asClock){ 
+        Module (
         new  f2_cm_serdes_lane ( () => new iofifosigs(n=n)))
+    }
     }
 
     private def iomap[T <: Data] = { x:T => IO(chiselTypeOf(x)) }
@@ -177,7 +179,6 @@ class f2_dsp_and_serdes (
         val in_fifo = Module(new AsyncQueue(value.signal, depth = 1, sync = 3)).io
         in_fifo.enq.bits  := io.inputMap(name).signal
         value.signal      := in_fifo.deq.bits
-
         in_fifo.enq_clock := clock
         in_fifo.enq_reset := reset
         in_fifo.deq_clock := rxClock
@@ -196,6 +197,7 @@ class f2_dsp_and_serdes (
 
         out_fifo.enq_clock        := txClock
         out_fifo.enq_reset        := txReset
+        out_fifo.deq_clock        := clock
         out_fifo.deq_clock        := clock
         out_fifo.deq_reset        := reset
 
@@ -235,9 +237,12 @@ class f2_dsp_and_serdes (
       }
     }
     // .get is used because the io's are Options, not Seq
-    (lanes,io.lane_clkrst).zipped.map(_.io.asyncResetIn<>_.asyncResetIn)
-    //(lanes,io.lane_clkrst).zipped.map(_.io.clockRef<>_.clockRef)
-    lanes.map(_.io.clockRef<>clkrefdiv.clkpn.asClock)
+
+    //ANALOG lane reset and reference clock 
+    (lanes,io.lane_refclk_and_reset).zipped.map(_.io.asyncResetIn<>_.asyncResetIn)
+
+    //THIS CLOCK IS THE FAST 875MHz clock for internal PLL
+    (lanes,io.lane_refclk_and_reset).zipped.map(_.io.clockRef<>_.clockRef)
 
    //Connect switchbox to SerDes
    (lanes,dsp.lanes_tx).zipped.map(_.io.data.tx<>_)
