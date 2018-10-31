@@ -1,7 +1,7 @@
 // This is the module containing the f2_dsp and the serdes lanes
 // Initially written by Marko Kosunen and Paul Rigge, May 2018
 //
-// Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 18.10.2018 19:08
+// Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 19.10.2018 16:49
 /////////////////////////////////////////////////////////////////////////////
 package f2_dsp_and_serdes
 import chisel3._
@@ -197,7 +197,6 @@ class f2_dsp_and_serdes (
 
         out_fifo.enq_clock        := txClock
         out_fifo.enq_reset        := txReset
-        out_fifo.deq_clock        := clock
         out_fifo.deq_clock        := clock
         out_fifo.deq_reset        := reset
 
