@@ -1,7 +1,7 @@
 // This is the module containing the f2_dsp and the serdes lanes
 // Initially written by Marko Kosunen and Paul Rigge, May 2018
 //
-// Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 19.10.2018 16:49
+// Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 31.10.2018 17:46
 /////////////////////////////////////////////////////////////////////////////
 package f2_dsp_and_serdes
 import chisel3._
@@ -22,10 +22,13 @@ import f2_tx_path._
 import f2_dsp._
 import f2_serdes_test._
 import clkdiv_n_2_4_8._
+import CM_link_ref_clk_rx._
 
 class lane_clock_and_reset extends Bundle {
-    val clockRef                = Input(Clock())  
+    //val clockRef                = Input(Clock())  
     val asyncResetIn            = Input(Bool())
+    val REF_SERDES_CM_P         = Input(UInt(1.W))
+    val REF_SERDES_CM_N         = Input(UInt(1.W))
 }
 
 class laneioanalog extends Bundle {
@@ -117,7 +120,12 @@ class f2_dsp_and_serdes (
     val iofifozero = 0.U.asTypeOf(new iofifosigs(n=n))
     val datazero   = 0.U.asTypeOf(iofifozero.data)
     val rxindexzero= 0.U.asTypeOf(iofifozero.rxindex)
-   
+
+    //Serdes clock receivers
+    val lane_ref_clock_rx =Seq.fill(numserdes){
+        Module ( 
+            new CM_link_ref_clk_rx()
+        ).io}   
 
     // clock divider
     val lane_clock_div = Module ( new clkdiv_n_2_4_8 ( n=8) ).io //This clock is to provide programmable dequeue clock 
@@ -241,7 +249,9 @@ class f2_dsp_and_serdes (
     (lanes,io.lane_refclk_and_reset).zipped.map(_.io.asyncResetIn<>_.asyncResetIn)
 
     //THIS CLOCK IS THE FAST 875MHz clock for internal PLL
-    (lanes,io.lane_refclk_and_reset).zipped.map(_.io.clockRef<>_.clockRef)
+    (lane_ref_clock_rx,io.lane_refclk_and_reset).zipped.map(_.VIN<>_.REF_SERDES_CM_N)
+    (lane_ref_clock_rx,io.lane_refclk_and_reset).zipped.map(_.VIP<>_.REF_SERDES_CM_P)
+    (lanes,lane_ref_clock_rx).zipped.map(_.io.clockRef<>_.VOBUF)
 
    //Connect switchbox to SerDes
    (lanes,dsp.lanes_tx).zipped.map(_.io.data.tx<>_)
