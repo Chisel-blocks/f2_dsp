@@ -52,8 +52,8 @@ class f2_dsp_ctrl_io(
     val adc_lut_write_vals      = Input(Vec(antennas,DspComplex(SInt(rxinputn.W), SInt(rxinputn.W))))
     val adc_lut_write_en        = Input(Bool())
     val adc_lut_reset           = Input(Bool())
-    val from_serdes_scan        = Vec(numserdes,Flipped(DecoupledIO(new iofifosigs(n=n))))
-    val from_dsp_scan           = Vec(numserdes,Flipped(DecoupledIO(new iofifosigs(n=n))))
+    val from_serdes_scan        = Vec(numserdes,Flipped(DecoupledIO(new iofifosigs(n=n,users=users))))
+    val from_dsp_scan           = Vec(numserdes,Flipped(DecoupledIO(new iofifosigs(n=n,users=users))))
     val dsp_to_serdes_address   = Vec(numserdes,Input(UInt(log2Ceil(neighbours+2).W)))
     val serdes_to_dsp_address   = Vec(neighbours+2,Input(UInt(log2Ceil(numserdes).W)))
     val to_serdes_mode          = Vec(numserdes,Input(UInt(2.W))) //Off/On/Scan
@@ -166,7 +166,7 @@ class f2_dsp (
      val userzero   = 0.U.asTypeOf(new usersigs(n=n,users=users))
      val udatazero  = 0.U.asTypeOf(userzero.data)
      val uindexzero = 0.U.asTypeOf(userzero.uindex)
-     val iofifozero = 0.U.asTypeOf(new iofifosigs(n=n))
+     val iofifozero = 0.U.asTypeOf(new iofifosigs(n=n,users=users))
      val datazero   = 0.U.asTypeOf(iofifozero.data)
      val rxindexzero= 0.U.asTypeOf(iofifozero.rxindex)
      
@@ -257,6 +257,7 @@ class f2_dsp (
      val switchbox = Module (
          new f2_lane_switch (
              n=n,
+             users=users,
              todspios=neighbours+2,
              fromdspios=neighbours+2,
              serdesios=numserdes
@@ -295,7 +296,7 @@ class f2_dsp (
 }
 //This gives you verilog
 object f2_dsp extends App {
-  chisel3.Driver.execute(args, () => new f2_dsp(rxinputn=9, bin=4,thermo=5, n=16, antennas=4, users=4, fifodepth=16, numserdes=2, serdestestmemsize=scala.math.pow(2,13).toInt ))
+  chisel3.Driver.execute(args, () => new f2_dsp(rxinputn=9, bin=4,thermo=5, n=16, antennas=4, users=16, fifodepth=16, numserdes=2, serdestestmemsize=scala.math.pow(2,13).toInt ))
 }
 
 
