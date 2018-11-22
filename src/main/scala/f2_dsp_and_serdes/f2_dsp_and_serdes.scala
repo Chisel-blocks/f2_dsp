@@ -1,7 +1,7 @@
 // This is the module containing the f2_dsp and the serdes lanes
 // Initially written by Marko Kosunen and Paul Rigge, May 2018
 //
-// Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 21.11.2018 18:33
+// Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 21.11.2018 18:58
 /////////////////////////////////////////////////////////////////////////////
 package f2_dsp_and_serdes
 import chisel3._
@@ -117,7 +117,7 @@ class f2_dsp_and_serdes (
     val userzero   = 0.U.asTypeOf(new usersigs(n=n,users=users))
     val udatazero  = 0.U.asTypeOf(userzero.data)
     val uindexzero = 0.U.asTypeOf(userzero.uindex)
-    val iofifozero = 0.U.asTypeOf(new iofifosigs(n=n))
+    val iofifozero = 0.U.asTypeOf(new iofifosigs(n=n,users=users))
     val datazero   = 0.U.asTypeOf(iofifozero.data)
     val rxindexzero= 0.U.asTypeOf(iofifozero.rxindex)
 
@@ -170,7 +170,7 @@ class f2_dsp_and_serdes (
     implicit val m=PatternMemConfig()
     val lanes  = Seq.fill(numserdes){ withClock(lane_clock_div.clkpn.asClock){ 
         Module (
-        new  f2_cm_serdes_lane ( () => new iofifosigs(n=n)))
+        new  f2_cm_serdes_lane ( () => new iofifosigs(n=n,users=users)))
     }
     }
 
