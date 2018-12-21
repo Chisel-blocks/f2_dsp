@@ -24,6 +24,7 @@ object tb_f2_dsp {
              val users=16
              val uindexbits=4
              val neighbours=4
+             val testmemsize=13
              object tx {
                  //val n = 16
                  //val inputn = 9
@@ -273,34 +274,34 @@ object tb_f2_dsp {
                               ioseq++=Seq(
                                   ("out","io_ctrl_and_clocks_from_serdes_scan_%s_ready".format(i).mkString,"None","None","None","None"),
                                   ("in","io_ctrl_and_clocks_from_serdes_scan_%s_valid".format(i).mkString,"None","None","None","'b1"),
-                                  ("in","io_ctrl_and_clocks_from_serdes_scan_%s_bits_rxindex".format(i).mkString,1,0,"None","'b0"),
+                                  ("in","io_ctrl_and_clocks_from_serdes_scan_%s_bits_rxindex".format(i).mkString,rxindexbits-1,0,"None","'b0"),
                                   ("out","io_ctrl_and_clocks_from_dsp_scan_%s_ready".format(i).mkString,"None","None","None","None"),
                                   ("in","io_ctrl_and_clocks_from_dsp_scan_%s_valid".format(i).mkString,"None","None","None","'b1"),
-                                  ("in","io_ctrl_and_clocks_from_dsp_scan_%s_bits_rxindex".format(i).mkString,1,0,"None","'b0"),
+                                  ("in","io_ctrl_and_clocks_from_dsp_scan_%s_bits_rxindex".format(i).mkString,rxindexbits-1,0,"None","'b0"),
                                   ("in","io_ctrl_and_clocks_dsp_to_serdes_address_%s".format(i).mkString,2,0,"None","'b0"),
                                   ("in","io_ctrl_and_clocks_to_serdes_mode_%s".format(i).mkString,1,0,"None","'b1")
                               )
 
                               for( k <-0 until users ) { 
                                   ioseq++=Seq(
-                                      ("in","io_ctrl_and_clocks_from_serdes_scan_%s_bits_data_%s_udata_real".format(i,k).mkString,15,0,"None","'b0"),
-                                      ("in","io_ctrl_and_clocks_from_serdes_scan_%s_bits_data_%s_udata_imag".format(i,k).mkString,15,0,"None","'b0"),
-                                      ("in","io_ctrl_and_clocks_from_serdes_scan_%s_bits_data_%s_uindex".format(i,k).mkString,1,0,"None","'b0"),
-                                      ("in","io_ctrl_and_clocks_from_dsp_scan_%s_bits_data_%s_udata_real".format(i,k).mkString,15,0,"None","'b0"),
-                                      ("in","io_ctrl_and_clocks_from_dsp_scan_%s_bits_data_%s_udata_imag".format(i,k).mkString,15,0,"None","'b0"),
-                                      ("in","io_ctrl_and_clocks_from_dsp_scan_%s_bits_data_%s_uindex".format(i,k).mkString,1,0,"None","'b0")
+                                      ("in","io_ctrl_and_clocks_from_serdes_scan_%s_bits_data_%s_udata_real".format(i,k).mkString,tx.inbits-1,0,"None","'b0"),
+                                      ("in","io_ctrl_and_clocks_from_serdes_scan_%s_bits_data_%s_udata_imag".format(i,k).mkString,tx.inbits-1,0,"None","'b0"),
+                                      ("in","io_ctrl_and_clocks_from_serdes_scan_%s_bits_data_%s_uindex".format(i,k).mkString,uindexbits-1,0,"None","'b0"),
+                                      ("in","io_ctrl_and_clocks_from_dsp_scan_%s_bits_data_%s_udata_real".format(i,k).mkString,rx.n-1,0,"None","'b0"),
+                                      ("in","io_ctrl_and_clocks_from_dsp_scan_%s_bits_data_%s_udata_imag".format(i,k).mkString,rx.n-1,0,"None","'b0"),
+                                      ("in","io_ctrl_and_clocks_from_dsp_scan_%s_bits_data_%s_uindex".format(i,k).mkString,uindexbits-1,0,"None","'b0")
                                   )
                               }
                           }
 
                           for( i <-0 until users ) { 
                               ioseq++=Seq(
-                                  ("in","io_ctrl_and_clocks_serdestest_scan_write_value_data_%s_udata_real".format(i).mkString,15,0,"None","'b0"),
-                                  ("in","io_ctrl_and_clocks_serdestest_scan_write_value_data_%s_udata_imag".format(i).mkString,15,0,"None","'b0"),
-                                  ("in","io_ctrl_and_clocks_serdestest_scan_write_value_data_%s_uindex".format(i).mkString,1,0,"None","'b0"),
-                                  ("outs","io_ctrl_and_clocks_serdestest_scan_read_value_data_%s_udata_real".format(i).mkString,15,0,"None","'b0"),
-                                  ("outs","io_ctrl_and_clocks_serdestest_scan_read_value_data_%s_udata_imag".format(i).mkString,15,0,"None","'b0"),
-                                  ("outs","io_ctrl_and_clocks_serdestest_scan_read_value_data_%s_uindex".format(i).mkString,1,0,"None","'b0")
+                                  ("in","io_ctrl_and_clocks_serdestest_scan_write_value_data_%s_udata_real".format(i).mkString,tx.inbits-1,0,"None","'b0"),
+                                  ("in","io_ctrl_and_clocks_serdestest_scan_write_value_data_%s_udata_imag".format(i).mkString,tx.inbits-1,0,"None","'b0"),
+                                  ("in","io_ctrl_and_clocks_serdestest_scan_write_value_data_%s_uindex".format(i).mkString,uindexbits-1,0,"None","'b0"),
+                                  ("outs","io_ctrl_and_clocks_serdestest_scan_read_value_data_%s_udata_real".format(i).mkString,rx.n-1,0,"None","'b0"),
+                                  ("outs","io_ctrl_and_clocks_serdestest_scan_read_value_data_%s_udata_imag".format(i).mkString,rx.n-1,0,"None","'b0"),
+                                  ("outs","io_ctrl_and_clocks_serdestest_scan_read_value_data_%s_uindex".format(i).mkString,uindexbits-1,0,"None","'b0")
                               )
                           }
 
@@ -313,12 +314,12 @@ object tb_f2_dsp {
 
                           ioseq++=Seq(
                               ("in","io_ctrl_and_clocks_serdestest_scan_write_mode",1,0,"None","'b0"),
-                              ("in","io_ctrl_and_clocks_serdestest_scan_write_address",12,0,"None","'b0"),
-                              ("in","io_ctrl_and_clocks_serdestest_scan_write_value_rxindex",1,0,"None","'b0"),
+                              ("in","io_ctrl_and_clocks_serdestest_scan_write_address",testmemsize-1,0,"None","'b0"),
+                              ("in","io_ctrl_and_clocks_serdestest_scan_write_value_rxindex",rxindexbits-1,0,"None","'b0"),
                               ("in","io_ctrl_and_clocks_serdestest_scan_write_en","None","None","None","'b0"),
                               ("in","io_ctrl_and_clocks_serdestest_scan_read_mode",1,0,"None","'b0"),
-                              ("in","io_ctrl_and_clocks_serdestest_scan_read_address",12,0,"None","'b0"),
-                              ("out","io_ctrl_and_clocks_serdestest_scan_read_value_rxindex",1,0,"None","None"),
+                              ("in","io_ctrl_and_clocks_serdestest_scan_read_address",testmemsize-1,0,"None","'b0"),
+                              ("out","io_ctrl_and_clocks_serdestest_scan_read_value_rxindex",rxindexbits-1,0,"None","None"),
                               ("in","io_ctrl_and_clocks_serdestest_scan_read_en","None","None","None","'b0")
                           )
         }
