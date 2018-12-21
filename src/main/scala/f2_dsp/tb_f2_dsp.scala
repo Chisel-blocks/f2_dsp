@@ -17,12 +17,12 @@ object tb_f2_dsp {
          object tbvars {
              val oname=name
              val dutmod = "f2_dsp" 
-             val uindexbits=2
-             val rxindexbits=2
              val rxantennas=4
              val txantennas=4
+             val rxindexbits=2
              val nserdes=2
              val users=16
+             val uindexbits=4
              val neighbours=4
              object tx {
                  //val n = 16
