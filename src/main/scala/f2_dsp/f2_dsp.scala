@@ -52,11 +52,15 @@ class f2_dsp_ctrl_io(
     val adc_lut_write_vals      = Input(Vec(antennas,DspComplex(SInt(rxinputn.W), SInt(rxinputn.W))))
     val adc_lut_write_en        = Input(Bool())
     val adc_lut_reset           = Input(Bool())
-    val from_serdes_scan        = Vec(numserdes,Flipped(DecoupledIO(new iofifosigs(n=n,users=users))))
-    val from_dsp_scan           = Vec(numserdes,Flipped(DecoupledIO(new iofifosigs(n=n,users=users))))
-    val dsp_to_serdes_address   = Vec(numserdes,Input(UInt(log2Ceil(neighbours+2).W)))
-    val serdes_to_dsp_address   = Vec(neighbours+2,Input(UInt(log2Ceil(numserdes).W)))
-    val to_serdes_mode          = Vec(numserdes,Input(UInt(2.W))) //Off/On/Scan
+    // These are to provide constants from scan as
+    // serdes output (from_serdes) and intput (from_dsp)
+    val from_serdes_scan        = Vec(numserdes+2,Flipped(DecoupledIO(new iofifosigs(n=n,users=users))))
+    val from_dsp_scan           = Vec(numserdes+2,Flipped(DecoupledIO(new iofifosigs(n=n,users=users))))
+    //switch address space rx_dsp+tx_to_neighbours+frim_mem_to_serdes
+    val dsp_to_serdes_address   = Vec(numserdes+2,Input(UInt(log2Ceil(neighbours+2).W)))
+    //switch address space serdeses+dsp_rx_to_memory+memory_to_tx
+    val serdes_to_dsp_address   = Vec(neighbours+2,Input(UInt(log2Ceil(numserdes+2).W)))
+    val to_serdes_mode          = Vec(numserdes+2,Input(UInt(2.W))) //Off/On/Scan
     val to_dsp_mode             = Vec(neighbours+2,Input(UInt(2.W))) //Off/on/scan
     val rx_user_delays          = Input(Vec(antennas, Vec(users,UInt(log2Ceil(progdelay).W))))
     val rx_fine_delays          = Input(Vec(antennas, UInt(log2Ceil(finedelay).W)))
@@ -125,8 +129,8 @@ class f2_dsp_io(
     val lanes_tx                =Vec(numserdes,DecoupledIO(new iofifosigs(n=n,users=users)))
     val lanes_rx_deq_clock      = Output(Clock())  // rx refers to rx of the serdes
                                                    // read samples from lanes_rx to RF transmitter
-    val lanes_tx_enq_clock      = Input(Clock())  // Tx refers to serdes tx. 
-                                                  // reads samples from RF receiveer  
+    val lanes_tx_enq_clock      = Input(Clock())  // Tx refers to serdes tx.
+                                                  // reads samples from RF receiveer
     }
 
 class f2_dsp (
@@ -169,17 +173,17 @@ class f2_dsp (
      val iofifozero = 0.U.asTypeOf(new iofifosigs(n=n,users=users))
      val datazero   = 0.U.asTypeOf(iofifozero.data)
      val rxindexzero= 0.U.asTypeOf(iofifozero.rxindex)
-     
+
      // clock dividers
      val rxclkdiv = withClock(io.ctrl_and_clocks.adc_clocks(0))(Module ( new clkdiv_n_2_4_8 ( n=8)).io)
      rxclkdiv.Ndiv:=io.ctrl_and_clocks.rx_Ndiv
      rxclkdiv.reset_clk:=io.ctrl_and_clocks.rx_reset_clkdiv
      rxclkdiv.shift:=io.ctrl_and_clocks.rx_clkdiv_shift
-     val txclkdiv = Module ( new clkdiv_n_2_4_8 ( n=8)).io 
+     val txclkdiv = Module ( new clkdiv_n_2_4_8 ( n=8)).io
      txclkdiv.Ndiv:=io.ctrl_and_clocks.tx_Ndiv
      txclkdiv.reset_clk:=io.ctrl_and_clocks.tx_reset_clkdiv
      txclkdiv.shift:=io.ctrl_and_clocks.tx_clkdiv_shift
- 
+
      // RX:s
      // Vec is required to do runtime adressing of an array i.e. Seq is not hardware structure
      // Clock of the RX is at the highest frequency
@@ -187,8 +191,8 @@ class f2_dsp (
                                              users=users, fifodepth=fifodepth,
                                              progdelay=progdelay,finedelay=finedelay,
                                              neighbours=neighbours)).io
-     rxdsp.decimator_clocks.cic3clockslow:=rxclkdiv.clkpn.asClock 
-     rxdsp.decimator_clocks.hb1clock_low :=rxclkdiv.clkp2n.asClock 
+     rxdsp.decimator_clocks.cic3clockslow:=rxclkdiv.clkpn.asClock
+     rxdsp.decimator_clocks.hb1clock_low :=rxclkdiv.clkp2n.asClock
      rxdsp.decimator_clocks.hb2clock_low :=rxclkdiv.clkp4n.asClock
      rxdsp.decimator_clocks.hb3clock_low :=rxclkdiv.clkp8n.asClock
      rxdsp.clock_symrate                 :=rxclkdiv.clkp8n.asClock
@@ -196,24 +200,24 @@ class f2_dsp (
      //Check clocking
      rxdsp.clock_infifo_enq.map(_<>rxclkdiv.clkp8n.asClock) //symrate
      rxdsp.clock_outfifo_deq<>io.lanes_tx_enq_clock   //Should be faster than 4xsymrate
- 
-     // For TX, the master clock is the slowest, 
+
+     // For TX, the master clock is the slowest,
      // faster clocks are formed from the system master clock.
-     val txdsp  = withClock(txclkdiv.clkp8n.asClock)(Module ( 
+     val txdsp  = withClock(txclkdiv.clkp8n.asClock)(Module (
          new  f2_tx_dsp (outputn=rxinputn, n=n, antennas=antennas,
                                            users=users, fifodepth=fifodepth,
                                            progdelay=progdelay,finedelay=finedelay,
                                            neighbours=neighbours,weightbits=txweightbits)).io
      )
-     
+
      txdsp.interpolator_clocks.cic3clockfast   := clock
-     txdsp.interpolator_clocks.hb3clock_high   := txclkdiv.clkpn.asClock 
-     txdsp.interpolator_clocks.hb2clock_high   := txclkdiv.clkp2n.asClock 
+     txdsp.interpolator_clocks.hb3clock_high   := txclkdiv.clkpn.asClock
+     txdsp.interpolator_clocks.hb2clock_high   := txclkdiv.clkp2n.asClock
      txdsp.interpolator_clocks.hb1clock_high   := txclkdiv.clkp4n.asClock
      txdsp.interpolator_clocks.hb1clock_low    := txclkdiv.clkp8n.asClock
      txdsp.clock_symrate                       := txclkdiv.clkp8n.asClock
      io.lanes_rx_deq_clock                     := txclkdiv.clkp8n.asClock
- 
+
      //Map io inputs
      //Rx
      rxdsp.iptr_A             :=io.iptr_A
@@ -253,21 +257,21 @@ class f2_dsp (
      txdsp.tx_user_delays     := io.ctrl_and_clocks.tx_user_delays
      txdsp.tx_fine_delays     := io.ctrl_and_clocks.tx_fine_delays
      txdsp.tx_user_weights    := io.ctrl_and_clocks.tx_user_weights
- 
+
      val switchbox = Module (
          new f2_lane_switch (
              n=n,
              users=users,
              todspios=neighbours+2,
              fromdspios=neighbours+2,
-             serdesios=numserdes
+             serdesios=numserdes+2
          )
      ).io
- 
-     //SerDes Test Memory and state machine 
+
+     //SerDes Test Memory and state machine
      val proto=new iofifosigs(n=n,users=users)
      val serdestest  = Module ( new  f2_serdes_test(proto=proto,n=n,users=users,memsize=serdestestmemsize)).io
- 
+
      // Map serdestest IOs
      serdestest.scan<>io.ctrl_and_clocks.serdestest_scan
      //Switchbox controls
@@ -277,26 +281,34 @@ class f2_dsp (
      switchbox.serdes_to_dsp_address<> io.ctrl_and_clocks.serdes_to_dsp_address
      switchbox.to_serdes_mode       <> io.ctrl_and_clocks.to_serdes_mode
      switchbox.to_dsp_mode          <> io.ctrl_and_clocks.to_dsp_mode
- 
+
      //Connect RX DSP to switchbox
      rxdsp.ofifo<>switchbox.from_dsp(0)
+     rxdsp.ofifo<>switchbox.from_serdes(numserdes) //This is for testing rx to memory
      (rxdsp.iptr_fifo.take(neighbours),switchbox.to_dsp.slice(1,neighbours+1)).zipped.map(_<>_)
- 
+
      // Test input for memory, last indexes
      serdestest.to_serdes<>switchbox.from_dsp(neighbours+1)
      serdestest.from_serdes<>switchbox.to_dsp(neighbours+1)
- 
+     // This enables writing to TX from memory
+     serdestest.to_serdes<>switchbox.from_serdes(numserdes+1)
+
      //Connect TX DSP to switchbox
      txdsp.iptr_A<>switchbox.to_dsp(0)
+     //End index of slice is exclusive
      (txdsp.optr_neighbours.take(neighbours),switchbox.from_dsp.slice(1,neighbours+1)).zipped.map(_<>_)
- 
+
      //Connect switchbox to SerDes IO
      (io.lanes_tx,switchbox.to_serdes).zipped.map(_<>_)
-     (io.lanes_rx,switchbox.from_serdes).zipped.map(_<>_)
+     (io.lanes_rx,switchbox.from_serdes.take(numserdes)).zipped.map(_<>_)
+     //Outputs are ready, althoug floating
+     switchbox.to_serdes.slice(numserdes,numserdes+2).map(_.ready:=1.U)
+     //switchbox.to_serdes(numserdes).ready:=1.U
+     //switchbox.to_serdes(numserdes+1).ready:=1.U
+
 }
 //This gives you verilog
 object f2_dsp extends App {
   chisel3.Driver.execute(args, () => new f2_dsp(rxinputn=9, bin=4,thermo=5, n=16, antennas=4, users=16, fifodepth=16, numserdes=2, serdestestmemsize=scala.math.pow(2,13).toInt ))
 }
-
 
