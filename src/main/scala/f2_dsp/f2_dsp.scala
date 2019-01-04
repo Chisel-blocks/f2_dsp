@@ -299,7 +299,7 @@ class f2_dsp (
      (txdsp.optr_neighbours.take(neighbours),switchbox.from_dsp.slice(1,neighbours+1)).zipped.map(_<>_)
 
      //Connect switchbox to SerDes IO
-     (io.lanes_tx,switchbox.to_serdes).zipped.map(_<>_)
+     (io.lanes_tx,switchbox.to_serdes.take(numserdes)).zipped.map(_<>_)
      (io.lanes_rx,switchbox.from_serdes.take(numserdes)).zipped.map(_<>_)
      //Outputs are ready, althoug floating
      switchbox.to_serdes.slice(numserdes,numserdes+2).map(_.ready:=1.U)
