@@ -270,7 +270,7 @@ object tb_f2_dsp {
                           }
 
                           //Serdes test stuff
-                          for( i <-0 until nserdes ) { 
+                          for( i <-0 until nserdes+2 ) { 
                               ioseq++=Seq(
                                   ("out","io_ctrl_and_clocks_from_serdes_scan_%s_ready".format(i).mkString,"None","None","None","None"),
                                   ("in","io_ctrl_and_clocks_from_serdes_scan_%s_valid".format(i).mkString,"None","None","None","'b1"),
@@ -307,7 +307,7 @@ object tb_f2_dsp {
 
                           for( i <-0 until nserdes+neighbours ) { 
                               ioseq++=Seq(
-                                      ("in","io_ctrl_and_clocks_serdes_to_dsp_address_%s".format(i).mkString,"None","None","None","'b0"),
+                                      ("in","io_ctrl_and_clocks_serdes_to_dsp_address_%s".format(i).mkString,1,0,"None","'b0"),
                                       ("in","io_ctrl_and_clocks_to_dsp_mode_%s".format(i).mkString,1,0,"None","'b1")
                                   )
                          }
