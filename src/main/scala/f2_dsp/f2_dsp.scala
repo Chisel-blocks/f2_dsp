@@ -18,6 +18,7 @@ import f2_tx_dsp._
 import f2_tx_path._
 import f2_serdes_test._
 import clkdiv_n_2_4_8._
+import decouple_branch._
 
 class f2_dsp_ctrl_io(
         val rxinputn           : Int=9,
@@ -258,10 +259,10 @@ class f2_dsp (
      txdsp.tx_fine_delays     := io.ctrl_and_clocks.tx_fine_delays
      txdsp.tx_user_weights    := io.ctrl_and_clocks.tx_user_weights
 
+     val proto=new iofifosigs(n=n,users=users)
      val switchbox = Module (
          new f2_lane_switch (
-             n=n,
-             users=users,
+             proto=proto.cloneType,
              todspios=neighbours+2,
              fromdspios=neighbours+2,
              serdesios=numserdes+2
@@ -269,7 +270,6 @@ class f2_dsp (
      ).io
 
      //SerDes Test Memory and state machine
-     val proto=new iofifosigs(n=n,users=users)
      val serdestest  = Module ( new  f2_serdes_test(proto=proto,n=n,users=users,memsize=serdestestmemsize)).io
 
      // Map serdestest IOs
@@ -283,15 +283,21 @@ class f2_dsp (
      switchbox.to_dsp_mode          <> io.ctrl_and_clocks.to_dsp_mode
 
      //Connect RX DSP to switchbox
-     rxdsp.ofifo<>switchbox.from_dsp(0)
-     rxdsp.ofifo<>switchbox.from_serdes(numserdes) //This is for testing rx to memory
+     // TODO: if not ready, signals are zeroed. Should be (asynchronously) held
+     val rx_ofifo_branch= Module ( new decouple_branch(proto=proto,n=2)).io
+     rxdsp.ofifo<>rx_ofifo_branch.Ai
+     rx_ofifo_branch.Bo(0)<>switchbox.from_dsp(0)
+     rx_ofifo_branch.Bo(1)<>switchbox.from_serdes(numserdes)
      (rxdsp.iptr_fifo.take(neighbours),switchbox.to_dsp.slice(1,neighbours+1)).zipped.map(_<>_)
 
      // Test input for memory, last indexes
-     serdestest.to_serdes<>switchbox.from_dsp(neighbours+1)
-     serdestest.from_serdes<>switchbox.to_dsp(neighbours+1)
+     val serdestest_branch= Module ( new decouple_branch(proto=proto,n=2)).io
+     serdestest_branch.Ai<>serdestest.to_serdes
+     serdestest_branch.Bo(0)<>switchbox.from_dsp(neighbours+1)
      // This enables writing to TX from memory
-     serdestest.to_serdes<>switchbox.from_serdes(numserdes+1)
+     serdestest_branch.Bo(1)<>switchbox.from_serdes(numserdes+1)
+
+     serdestest.from_serdes<>switchbox.to_dsp(neighbours+1)
 
      //Connect TX DSP to switchbox
      txdsp.iptr_A<>switchbox.to_dsp(0)
