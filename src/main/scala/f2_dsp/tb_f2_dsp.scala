@@ -506,8 +506,8 @@ object tb_f2_dsp {
                             }.mkString
         txreadnames=txreadnames.patch(txreadnames.lastIndexOf(','),");",1)
          
-
-        val txioread="""|        while (!$feof(f_io_lanes_rx)) begin
+        val txioread="""|     //status_io_lanes_rx=$fgets(dummyline,f_io_lanes_rx);
+                        |     while (!$feof(f_io_lanes_rx)) begin
                         |             txdone<=0;
                         |             //Lane output fifo is read by the symrate clock
                         |             @(posedge io_lanes_rx_deq_clock )
@@ -534,7 +534,7 @@ object tb_f2_dsp {
                             }.mkString
         rxreadnames=rxreadnames.patch(rxreadnames.lastIndexOf(','),");",1)
          
-        val rxioread="""|       
+        val rxioread="""|      //status_io_lanes_rx=$fgets(dummyline,f_io_iptr_A);
                         |        while (!$feof(f_io_iptr_A)) begin
                         |            rxdone<=0;
                         |            @(posedge io_ctrl_and_clocks_adc_clocks_0 )
