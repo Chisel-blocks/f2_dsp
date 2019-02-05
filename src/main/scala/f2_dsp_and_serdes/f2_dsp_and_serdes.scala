@@ -51,8 +51,8 @@ class f2_dsp_and_serdes_io(
         val rxweightbits       : Int=10,
         val users              : Int=4,
         val numserdes          : Int=2,
-        val progdelay          : Int=64,
-        val finedelay          : Int=32,
+        val progdelay          : Int=63,
+        val finedelay          : Int=31,
         val neighbours         : Int=4,
         val serdestestmemsize  : Int=scala.math.pow(2,13).toInt
     ) extends Bundle {
@@ -94,8 +94,8 @@ class f2_dsp_and_serdes (
         fifodepth  : Int=16,
         numserdes  : Int=6,
         neighbours : Int=4,
-        progdelay  : Int=64,
-        finedelay  : Int=32,
+        progdelay  : Int=63,
+        finedelay  : Int=31,
         serdestestmemsize : Int=scala.math.pow(2,13).toInt
     ) extends MultiIOModule {
     val io = IO(
@@ -265,7 +265,7 @@ class f2_dsp_and_serdes (
 }
 //This gives you verilog
 object f2_dsp_and_serdes extends App {
-  chisel3.Driver.execute(args, () => new f2_dsp_and_serdes(rxinputn=9, bin=4,thermo=5, n=16, antennas=4, users=16, fifodepth=16, numserdes=2, serdestestmemsize=scala.math.pow(2,13).toInt ))
+  chisel3.Driver.execute(args, () => new f2_dsp_and_serdes(rxinputn=9, bin=4,thermo=5, progdelay=63, finedelay=31, n=16, antennas=4, users=16, fifodepth=16, numserdes=2, serdestestmemsize=scala.math.pow(2,13).toInt ))
 }
 
 
