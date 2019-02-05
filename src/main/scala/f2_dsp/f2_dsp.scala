@@ -33,8 +33,8 @@ class f2_dsp_ctrl_io(
         val rxweightbits       : Int=10,
         val users              : Int=4,
         val numserdes          : Int=2,
-        val progdelay          : Int=64,
-        val finedelay          : Int=32,
+        val progdelay          : Int=63,
+        val finedelay          : Int=31,
         val neighbours         : Int=4,
         val serdestestmemsize  : Int=scala.math.pow(2,13).toInt
     ) extends Bundle {
@@ -69,7 +69,7 @@ class f2_dsp_ctrl_io(
     val rx_Ndiv                 = Input(UInt(8.W))
     val rx_reset_clkdiv         = Input(Bool())
     val rx_clkdiv_shift         = Input(UInt(2.W))
-    val neighbour_delays        = Input(Vec(neighbours, Vec(users,UInt(log2Ceil(progdelay).W))))
+    val neighbour_delays        = Input(Vec(neighbours, Vec(users,UInt(log2Floor(progdelay).W))))
     val serdestest_scan         = new serdes_test_scan_ios(proto=new iofifosigs(n=n,users=users),memsize=serdestestmemsize)
     val reset_dacfifo           = Input(Bool())
     val user_spread_mode        = Input(UInt(3.W))
@@ -82,7 +82,7 @@ class f2_dsp_ctrl_io(
     val dac_lut_write_vals      = Input(Vec(antennas,DspComplex(SInt(txoutputn.W), SInt(txoutputn.W))))
     val dac_lut_write_en        = Vec(antennas,Input(Bool()))
     val tx_user_delays          = Input(Vec(antennas, Vec(users,UInt(log2Ceil(progdelay).W))))
-    val tx_fine_delays          = Input(Vec(antennas,UInt(log2Ceil(finedelay).W)))
+    val tx_fine_delays          = Input(Vec(antennas,UInt(log2Foor(finedelay).W)))
     val tx_user_weights         = Input(Vec(antennas,Vec(users,DspComplex(SInt(txweightbits.W), SInt(txweightbits.W)))))
     val tx_Ndiv                 = Input(UInt(8.W))
     val tx_reset_clkdiv         = Input(Bool())
@@ -103,8 +103,8 @@ class f2_dsp_io(
         val rxweightbits       : Int=10,
         val users              : Int=4,
         val numserdes          : Int=2,
-        val progdelay          : Int=64,
-        val finedelay          : Int=32,
+        val progdelay          : Int=63,
+        val finedelay          : Int=31,
         val neighbours         : Int=4,
         val serdestestmemsize  : Int=scala.math.pow(2,13).toInt
     ) extends Bundle {
@@ -148,8 +148,8 @@ class f2_dsp (
         fifodepth  : Int=16,
         numserdes  : Int=6,
         neighbours : Int=4,
-        progdelay  : Int=64,
-        finedelay  : Int=32,
+        progdelay  : Int=63,
+        finedelay  : Int=31,
         serdestestmemsize : Int=scala.math.pow(2,13).toInt
     ) extends MultiIOModule {
      val io = IO(
