@@ -69,7 +69,7 @@ class f2_dsp_ctrl_io(
     val rx_Ndiv                 = Input(UInt(8.W))
     val rx_reset_clkdiv         = Input(Bool())
     val rx_clkdiv_shift         = Input(UInt(2.W))
-    val neighbour_delays        = Input(Vec(neighbours, Vec(users,UInt(log2Floor(progdelay).W))))
+    val neighbour_delays        = Input(Vec(neighbours, Vec(users,UInt(log2Ceil(progdelay).W))))
     val serdestest_scan         = new serdes_test_scan_ios(proto=new iofifosigs(n=n,users=users),memsize=serdestestmemsize)
     val reset_dacfifo           = Input(Bool())
     val user_spread_mode        = Input(UInt(3.W))
@@ -82,7 +82,7 @@ class f2_dsp_ctrl_io(
     val dac_lut_write_vals      = Input(Vec(antennas,DspComplex(SInt(txoutputn.W), SInt(txoutputn.W))))
     val dac_lut_write_en        = Vec(antennas,Input(Bool()))
     val tx_user_delays          = Input(Vec(antennas, Vec(users,UInt(log2Ceil(progdelay).W))))
-    val tx_fine_delays          = Input(Vec(antennas,UInt(log2Foor(finedelay).W)))
+    val tx_fine_delays          = Input(Vec(antennas,UInt(log2Ceil(finedelay).W)))
     val tx_user_weights         = Input(Vec(antennas,Vec(users,DspComplex(SInt(txweightbits.W), SInt(txweightbits.W)))))
     val tx_Ndiv                 = Input(UInt(8.W))
     val tx_reset_clkdiv         = Input(Bool())
@@ -315,6 +315,6 @@ class f2_dsp (
 }
 //This gives you verilog
 object f2_dsp extends App {
-  chisel3.Driver.execute(args, () => new f2_dsp(rxinputn=9, bin=4,thermo=5, n=16, antennas=4, users=16, progdelay=63, finedelay=31 fifodepth=16, numserdes=2, serdestestmemsize=scala.math.pow(2,13).toInt ))
+  chisel3.Driver.execute(args, () => new f2_dsp(rxinputn=9, bin=4,thermo=5, n=16, antennas=4, users=16, progdelay=63, finedelay=31, fifodepth=16, numserdes=2, serdestestmemsize=scala.math.pow(2,13).toInt ))
 }
 
