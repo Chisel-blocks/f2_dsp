@@ -247,6 +247,7 @@ class f2_dsp (
      txdsp.interpolator_controls <> io.ctrl_and_clocks.interpolator_controls
      txdsp.dac_clocks         <> io.ctrl_and_clocks.dac_clocks
      txdsp.reset_dacfifo      <> io.ctrl_and_clocks.reset_dacfifo
+     txdsp.reset_infifo       <> io.ctrl_and_clocks.reset_infifo
      txdsp.user_spread_mode   <> io.ctrl_and_clocks.user_spread_mode
      txdsp.user_sum_mode      <> io.ctrl_and_clocks.user_sum_mode
      txdsp.user_select_index  <> io.ctrl_and_clocks.user_select_index
