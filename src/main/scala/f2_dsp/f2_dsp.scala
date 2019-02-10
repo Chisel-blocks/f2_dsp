@@ -201,7 +201,7 @@ class f2_dsp (
      //Check clocking
      rxdsp.clock_infifo_enq.map(_<>rxclkdiv.clkp8n.asClock) //symrate
      rxdsp.clock_outfifo_deq<>io.lanes_tx_enq_clock   //Should be faster than 4xsymrate
-
+                                                      // If we support serialization
      // For TX, the master clock is the slowest,
      // faster clocks are formed from the system master clock.
      val txdsp  = withClock(txclkdiv.clkp8n.asClock)(Module (
