@@ -271,7 +271,14 @@ class f2_dsp (
      ).io
 
      //SerDes Test Memory and state machine
-     val serdestest  = Module ( new  f2_serdes_test(proto=proto,n=n,users=users,memsize=serdestestmemsize)).io
+     val serdestest  = withClock(io.lanes_tx_enq_clock)(
+         Module ( new  f2_serdes_test(
+             proto=proto,
+             n=n,
+             users=users,
+             fifodepth=fifodepth,
+             memsize=serdestestmemsize)).io
+     )
 
      // Map serdestest IOs
      serdestest.scan<>io.ctrl_and_clocks.serdestest_scan
