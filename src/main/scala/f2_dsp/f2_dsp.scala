@@ -19,6 +19,7 @@ import f2_tx_path._
 import f2_serdes_test._
 import clkdiv_n_2_4_8._
 import decouple_branch._
+import dcpipe._
 
 class f2_dsp_ctrl_io(
         val rxinputn           : Int=9,
@@ -198,9 +199,18 @@ class f2_dsp (
      rxdsp.decimator_clocks.hb3clock_low :=rxclkdiv.clkp8n.asClock
      rxdsp.clock_symrate                 :=rxclkdiv.clkp8n.asClock
      rxdsp.clock_symratex4               :=rxclkdiv.clkp2n.asClock
+     
      //Check clocking
-     rxdsp.clock_infifo_enq.map(_<>rxclkdiv.clkp8n.asClock) //symrate
-     rxdsp.clock_outfifo_deq<>io.lanes_tx_enq_clock   //Should be faster than 4xsymrate
+     val proto=new iofifosigs(n=n,users=users)
+     val pipestages=4
+     val rxdsp_inpipe = Seq.fill(neighbours){ 
+        withClockAndReset(rxclkdiv.clkp8n.asClock, io.ctrl_and_clocks.reset_infifo){ 
+         Module(new dcpipe(proto.cloneType,latency=pipestages)).io
+       } 
+     }
+
+     rxdsp.clock_infifo_enq:=rxclkdiv.clkp8n.asClock //symrate
+     rxdsp.clock_outfifo_deq:=io.lanes_tx_enq_clock   //Should be faster than 5xsymrate
                                                       // If we support serialization
      // For TX, the master clock is the slowest,
      // faster clocks are formed from the system master clock.
@@ -210,7 +220,21 @@ class f2_dsp (
                                            progdelay=progdelay,finedelay=finedelay,
                                            neighbours=neighbours,weightbits=txweightbits)).io
      )
+    // Pipeline stages to alleviate place and route
+     val txpipe = withClock{txclkdiv.clkp8n.asClock}(Module ( new dcpipe(proto.cloneType,latency=pipestages)).io)
+     val dacproto = new dac_io(thermo=thermo,bin=bin)
+     val aint=(0 until antennas ).toList
+     val dacpipe = aint.map{index => 
+        withClockAndReset(io.ctrl_and_clocks.dac_clocks(index), 
+            io.ctrl_and_clocks.reset_dacfifo){ 
+                Module(new Pipe(dacproto.cloneType,latency=pipestages)).io
+       } 
+     }
+     dacpipe.map(_.enq.valid:=true.B)
 
+     rxdsp.clock_infifo_enq:=rxclkdiv.clkp8n.asClock //symrate
+     rxdsp.clock_outfifo_deq:=io.lanes_tx_enq_clock   //Should be faster than 5xsymrate
+                                                      // If we support serialization
      txdsp.interpolator_clocks.cic3clockfast   := clock
      txdsp.interpolator_clocks.hb3clock_high   := txclkdiv.clkpn.asClock
      txdsp.interpolator_clocks.hb2clock_high   := txclkdiv.clkp2n.asClock
@@ -255,12 +279,13 @@ class f2_dsp (
      txdsp.dac_lut_write_addr <> io.ctrl_and_clocks.dac_lut_write_addr
      txdsp.dac_lut_write_vals <> io.ctrl_and_clocks.dac_lut_write_vals
      txdsp.dac_lut_write_en   <> io.ctrl_and_clocks.dac_lut_write_en
-     txdsp.Z                  <> io.Z
+     (dacpipe,txdsp.Z).zipped.map(_.enq.bits:= _)
+     (io.Z,dacpipe).zipped.map(_:= _.deq.bits)
+     //txdsp.Z                  <> io.Z
      txdsp.tx_user_delays     := io.ctrl_and_clocks.tx_user_delays
      txdsp.tx_fine_delays     := io.ctrl_and_clocks.tx_fine_delays
      txdsp.tx_user_weights    := io.ctrl_and_clocks.tx_user_weights
 
-     val proto=new iofifosigs(n=n,users=users)
      val switchbox = Module (
          new f2_lane_switch (
              proto=proto.cloneType,
@@ -296,7 +321,11 @@ class f2_dsp (
      rxdsp.ofifo<>rx_ofifo_branch.Ai
      rx_ofifo_branch.Bo(0)<>switchbox.from_dsp(0)
      rx_ofifo_branch.Bo(1)<>switchbox.from_serdes(numserdes)
-     (rxdsp.iptr_fifo.take(neighbours),switchbox.to_dsp.slice(1,neighbours+1)).zipped.map(_<>_)
+     
+     // Rxdsp neighbour inputs
+     (rxdsp_inpipe,switchbox.to_dsp.slice(1,neighbours+1)).zipped.map(_.enq<>_)
+     (rxdsp_inpipe,rxdsp.iptr_fifo.take(neighbours)).zipped.map(_.deq<>_)
+     //(rxdsp.iptr_fifo.take(neighbours),switchbox.to_dsp.slice(1,neighbours+1)).zipped.map(_<>_)
 
      // Test input for memory, last indexes
      val serdestest_branch= Module ( new decouple_branch(proto=proto,n=2)).io
@@ -307,13 +336,19 @@ class f2_dsp (
 
      serdestest.from_serdes<>switchbox.to_dsp(neighbours+1)
 
+
      //Connect TX DSP to switchbox
-     txdsp.iptr_A<>switchbox.to_dsp(0)
+     txpipe.enq<>switchbox.to_dsp(0) 
+     txdsp.iptr_A<>txpipe.deq     
      //End index of slice is exclusive
      (txdsp.optr_neighbours.take(neighbours),switchbox.from_dsp.slice(1,neighbours+1)).zipped.map(_<>_)
 
+     // Add buffer pipes for serdes IO's
+     val serdestxpipe = Seq.fill(numserdes){ withClock(io.lanes_tx_enq_clock){ Module(new dcpipe(proto.cloneType,latency=pipestages)).io} }
+
      //Connect switchbox to SerDes IO
-     (io.lanes_tx,switchbox.to_serdes.take(numserdes)).zipped.map(_<>_)
+     (switchbox.to_serdes.take(numserdes),serdestxpipe).zipped.map(_<>_.enq)
+     (io.lanes_tx,serdestxpipe).zipped.map(_<>_.deq)
      (io.lanes_rx,switchbox.from_serdes.take(numserdes)).zipped.map(_<>_)
      //Outputs are ready, althoug floating
      switchbox.to_serdes.slice(numserdes,numserdes+2).map(_.ready:=1.U)
