@@ -123,6 +123,7 @@ class f2_dsp_io(
              progdelay        = progdelay,
              serdestestmemsize=serdestestmemsize
          )
+        val MASTER_CLOCK            = Input(Clock())
         val iptr_A                  = Input(Vec(antennas,DspComplex(SInt(rxinputn.W), SInt(rxinputn.W))))
         val Z                       = Output(Vec(antennas,new dac_io(thermo=thermo,bin=bin)))
     // In SerDes, TX is a input for the transmitter, RX is the output of the receiver
@@ -188,7 +189,7 @@ class f2_dsp (
 
      // RX:s
      // Vec is required to do runtime adressing of an array i.e. Seq is not hardware structure
-     // Clock of the RX is at the highest frequency
+     // Clock of the RX is at the highest frequency (Master clock)
      val rxdsp  = Module ( new  f2_rx_dsp (inputn=rxinputn, n=n, antennas=antennas,
                                              users=users, fifodepth=fifodepth,
                                              progdelay=progdelay,finedelay=finedelay,
