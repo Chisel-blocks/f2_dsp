@@ -171,7 +171,7 @@ class f2_dsp (
          )
      )
      val userzero   = 0.U.asTypeOf(new usersigs(n=n,users=users))
-     val udatazero  = 0.U.asTypeOf(userzero.data)
+     val udatazero  = 0.U.asTypeOf(userzero.udata)
      val uindexzero = 0.U.asTypeOf(userzero.uindex)
      val iofifozero = 0.U.asTypeOf(new iofifosigs(n=n,users=users))
      val datazero   = 0.U.asTypeOf(iofifozero.data)
