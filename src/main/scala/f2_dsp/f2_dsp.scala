@@ -130,7 +130,7 @@ class f2_dsp_io(
     // Thus, lanes_tx is an output, lanes_rx is an input
     val lanes_rx                =Vec(numserdes,Flipped(DecoupledIO(new iofifosigs(n=n,users=users))))
     val lanes_tx                =Vec(numserdes,DecoupledIO(new iofifosigs(n=n,users=users)))
-    val lanes_rx_deq_clock      = Output(Clock())  // rx refers to rx of the serdes
+    val lanes_rx_deq_clock      = Input(Clock())  // rx refers to rx of the serdes
                                                    // read samples from lanes_rx to RF transmitter
     val lanes_tx_enq_clock      = Input(Clock())  // Tx refers to serdes tx.
                                                   // reads samples from RF receiveer
@@ -182,6 +182,7 @@ class f2_dsp (
      rxclkdiv.Ndiv:=io.ctrl_and_clocks.rx_Ndiv
      rxclkdiv.reset_clk:=io.ctrl_and_clocks.rx_reset_clkdiv
      rxclkdiv.shift:=io.ctrl_and_clocks.rx_clkdiv_shift
+
      val txclkdiv = Module ( new clkdiv_n_2_4_8 ( n=8)).io
      txclkdiv.Ndiv:=io.ctrl_and_clocks.tx_Ndiv
      txclkdiv.reset_clk:=io.ctrl_and_clocks.tx_reset_clkdiv
@@ -194,25 +195,18 @@ class f2_dsp (
                                              users=users, fifodepth=fifodepth,
                                              progdelay=progdelay,finedelay=finedelay,
                                              neighbours=neighbours)).io
-     rxdsp.decimator_clocks.cic3clockslow:=rxclkdiv.clkpn.asClock
-     rxdsp.decimator_clocks.hb1clock_low :=rxclkdiv.clkp2n.asClock
-     rxdsp.decimator_clocks.hb2clock_low :=rxclkdiv.clkp4n.asClock
-     rxdsp.decimator_clocks.hb3clock_low :=rxclkdiv.clkp8n.asClock
-     rxdsp.clock_symrate                 :=rxclkdiv.clkp8n.asClock
-     rxdsp.clock_symratex4               :=rxclkdiv.clkp2n.asClock
      
      //Check clocking
      val proto=new iofifosigs(n=n,users=users)
      val pipestages=4
+
+     //This is always at symbol rate, no neet for faster 
      val rxdsp_inpipe = Seq.fill(neighbours){ 
-        withClockAndReset(rxclkdiv.clkp8n.asClock, io.ctrl_and_clocks.reset_infifo){ 
+        withClockAndReset(io.lanes_rx_deq_clock, io.ctrl_and_clocks.reset_infifo){ 
          Module(new dcpipe(proto.cloneType,latency=pipestages)).io
        } 
      }
 
-     rxdsp.clock_infifo_enq:=rxclkdiv.clkp8n.asClock //symrate
-     rxdsp.clock_outfifo_deq:=io.lanes_tx_enq_clock   //Should be faster than 5xsymrate
-                                                      // If we support serialization
      // For TX, the master clock is the slowest,
      // faster clocks are formed from the system master clock.
      val txdsp  = withClock(txclkdiv.clkp8n.asClock)(Module (
@@ -222,7 +216,7 @@ class f2_dsp (
                                            neighbours=neighbours,weightbits=txweightbits)).io
      )
     // Pipeline stages to alleviate place and route
-     val txpipe = withClock{txclkdiv.clkp8n.asClock}(Module ( new dcpipe(proto.cloneType,latency=pipestages)).io)
+     val txpipe = withClock{io.lanes_rx_deq_clock}(Module ( new dcpipe(proto.cloneType,latency=pipestages)).io)
      val dacproto = new dac_io(thermo=thermo,bin=bin)
      val aint=(0 until antennas ).toList
      val dacpipe = aint.map{index => 
@@ -233,19 +227,18 @@ class f2_dsp (
      }
      dacpipe.map(_.enq.valid:=true.B)
 
-     rxdsp.clock_infifo_enq:=rxclkdiv.clkp8n.asClock //symrate
-     rxdsp.clock_outfifo_deq:=io.lanes_tx_enq_clock   //Should be faster than 5xsymrate
-                                                      // If we support serialization
-     txdsp.interpolator_clocks.cic3clockfast   := clock
-     txdsp.interpolator_clocks.hb3clock_high   := txclkdiv.clkpn.asClock
-     txdsp.interpolator_clocks.hb2clock_high   := txclkdiv.clkp2n.asClock
-     txdsp.interpolator_clocks.hb1clock_high   := txclkdiv.clkp4n.asClock
-     txdsp.interpolator_clocks.hb1clock_low    := txclkdiv.clkp8n.asClock
-     txdsp.clock_symrate                       := txclkdiv.clkp8n.asClock
-     io.lanes_rx_deq_clock                     := txclkdiv.clkp8n.asClock
 
      //Map io inputs
      //Rx
+     rxdsp.decimator_clocks.cic3clockslow:=rxclkdiv.clkpn.asClock
+     rxdsp.decimator_clocks.hb1clock_low :=rxclkdiv.clkp2n.asClock
+     rxdsp.decimator_clocks.hb2clock_low :=rxclkdiv.clkp4n.asClock
+     rxdsp.decimator_clocks.hb3clock_low :=rxclkdiv.clkp8n.asClock
+     rxdsp.clock_symrate                 :=rxclkdiv.clkp8n.asClock
+     rxdsp.clock_symratex4               :=rxclkdiv.clkp2n.asClock
+     rxdsp.clock_infifo_enq:=io.lanes_rx_deq_clock   
+     rxdsp.clock_outfifo_deq:=io.lanes_tx_enq_clock   //Should be faster than 5xsymrate
+                                                      // If we support serialization
      rxdsp.iptr_A             :=io.iptr_A
      rxdsp.decimator_controls :=io.ctrl_and_clocks.decimator_controls
      rxdsp.adc_clocks         :=io.ctrl_and_clocks.adc_clocks
@@ -268,11 +261,19 @@ class f2_dsp (
      rxdsp.rx_user_weights    :=io.ctrl_and_clocks.rx_user_weights
      rxdsp.neighbour_delays   :=io.ctrl_and_clocks.neighbour_delays
      rxdsp.clock_outfifo_deq  :=io.lanes_tx_enq_clock
+     //
      //Tx
+     txdsp.interpolator_clocks.cic3clockfast   := clock
+     txdsp.interpolator_clocks.hb3clock_high   := txclkdiv.clkpn.asClock
+     txdsp.interpolator_clocks.hb2clock_high   := txclkdiv.clkp2n.asClock
+     txdsp.interpolator_clocks.hb1clock_high   := txclkdiv.clkp4n.asClock
+     txdsp.interpolator_clocks.hb1clock_low    := txclkdiv.clkp8n.asClock
+     txdsp.clock_symrate                       := txclkdiv.clkp8n.asClock
      txdsp.interpolator_controls <> io.ctrl_and_clocks.interpolator_controls
      txdsp.dac_clocks         <> io.ctrl_and_clocks.dac_clocks
      txdsp.reset_dacfifo      <> io.ctrl_and_clocks.reset_dacfifo
      txdsp.reset_infifo       <> io.ctrl_and_clocks.reset_infifo
+     txdsp.infifo_enq_clock   <> io.lanes_rx_deq_clock
      txdsp.user_spread_mode   <> io.ctrl_and_clocks.user_spread_mode
      txdsp.user_sum_mode      <> io.ctrl_and_clocks.user_sum_mode
      txdsp.user_select_index  <> io.ctrl_and_clocks.user_select_index

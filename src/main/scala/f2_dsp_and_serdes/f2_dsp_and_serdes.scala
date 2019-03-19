@@ -160,6 +160,7 @@ class f2_dsp_and_serdes (
     dsp.iptr_A<>io.iptr_A
     dsp.Z<>io.Z
     dsp.lanes_tx_enq_clock:=lane_clock_div.clkpn.asClock
+    dsp.lanes_rx_deq_clock:=lane_clock_div.clkpn.asClock
     
 
     ////////////////////////////////////////////////////////////////////////
