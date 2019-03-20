@@ -123,7 +123,6 @@ class f2_dsp_io(
              progdelay        = progdelay,
              serdestestmemsize=serdestestmemsize
          )
-        val MASTER_CLOCK            = Input(Clock())
         val iptr_A                  = Input(Vec(antennas,DspComplex(SInt(rxinputn.W), SInt(rxinputn.W))))
         val Z                       = Output(Vec(antennas,new dac_io(thermo=thermo,bin=bin)))
     // In SerDes, TX is a input for the transmitter, RX is the output of the receiver
