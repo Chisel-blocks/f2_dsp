@@ -36,7 +36,6 @@ class f2_dsp_ctrl_io(
         val numserdes          : Int=2,
         val progdelay          : Int=63,
         val finedelay          : Int=31,
-        val neighbours         : Int=4,
         val serdestestmemsize  : Int=scala.math.pow(2,13).toInt
     ) extends Bundle {
     val decimator_controls      = Vec(antennas,new f2_decimator_controls(resolution=resolution,gainbits=10))
@@ -59,18 +58,18 @@ class f2_dsp_ctrl_io(
     val from_serdes_scan        = Vec(numserdes+2,Flipped(DecoupledIO(new iofifosigs(n=n,users=users))))
     val from_dsp_scan           = Vec(numserdes+2,Flipped(DecoupledIO(new iofifosigs(n=n,users=users))))
     //switch address space rx_dsp+tx_to_neighbours+frim_mem_to_serdes
-    val dsp_to_serdes_address   = Vec(numserdes+2,Input(UInt(log2Ceil(neighbours+2).W)))
+    val dsp_to_serdes_address   = Vec(numserdes+2,Input(UInt(log2Ceil(numserdes+2).W)))
     //switch address space serdeses+dsp_rx_to_memory+memory_to_tx
-    val serdes_to_dsp_address   = Vec(neighbours+2,Input(UInt(log2Ceil(numserdes+2).W)))
+    val serdes_to_dsp_address   = Vec(2,Input(UInt(log2Ceil(numserdes+2).W)))
     val to_serdes_mode          = Vec(numserdes+2,Input(UInt(2.W))) //Off/On/Scan
-    val to_dsp_mode             = Vec(neighbours+2,Input(UInt(2.W))) //Off/on/scan
+    val to_dsp_mode             = Vec(2,Input(UInt(2.W))) //Off/on/scan
     val rx_user_delays          = Input(Vec(antennas, Vec(users,UInt(log2Ceil(progdelay).W))))
     val rx_fine_delays          = Input(Vec(antennas, UInt(log2Ceil(finedelay).W)))
     val rx_user_weights         = Input(Vec(antennas,Vec(users,DspComplex(SInt(rxweightbits.W),SInt(rxweightbits.W)))))
     val rx_Ndiv                 = Input(UInt(8.W))
     val rx_reset_clkdiv         = Input(Bool())
     val rx_clkdiv_shift         = Input(UInt(2.W))
-    val neighbour_delays        = Input(Vec(neighbours, Vec(users,UInt(log2Ceil(progdelay).W))))
+    val neighbour_delays        = Input(Vec(numserdes, Vec(users,UInt(log2Ceil(progdelay).W))))
     val serdestest_scan         = new serdes_test_scan_ios(proto=new iofifosigs(n=n,users=users),memsize=serdestestmemsize)
     val reset_dacfifo           = Input(Bool())
     val user_spread_mode        = Input(UInt(3.W))
@@ -106,7 +105,6 @@ class f2_dsp_io(
         val numserdes          : Int=2,
         val progdelay          : Int=63,
         val finedelay          : Int=31,
-        val neighbours         : Int=4,
         val serdestestmemsize  : Int=scala.math.pow(2,13).toInt
     ) extends Bundle {
          val ctrl_and_clocks= new f2_dsp_ctrl_io(
@@ -123,7 +121,8 @@ class f2_dsp_io(
              progdelay        = progdelay,
              serdestestmemsize=serdestestmemsize
          )
-        val iptr_A                  = Input(Vec(antennas,DspComplex(SInt(rxinputn.W), SInt(rxinputn.W))))
+        val iptr_A                  = Input(Vec(antennas,DspComplex(SInt(rxinputn.W), 
+            SInt(rxinputn.W))))
         val Z                       = Output(Vec(antennas,new dac_io(thermo=thermo,bin=bin)))
     // In SerDes, TX is a input for the transmitter, RX is the output of the receiver
     // Thus, lanes_tx is an output, lanes_rx is an input
@@ -147,8 +146,7 @@ class f2_dsp (
         gainbits   : Int=10,
         txweightbits: Int=10,
         fifodepth  : Int=16,
-        numserdes  : Int=6,
-        neighbours : Int=4,
+        numserdes  : Int=2,
         progdelay  : Int=63,
         finedelay  : Int=31,
         serdestestmemsize : Int=scala.math.pow(2,13).toInt
@@ -193,27 +191,25 @@ class f2_dsp (
      val rxdsp  = Module ( new  f2_rx_dsp (inputn=rxinputn, n=n, antennas=antennas,
                                              users=users, fifodepth=fifodepth,
                                              progdelay=progdelay,finedelay=finedelay,
-                                             neighbours=neighbours)).io
+                                             neighbours=numserdes)).io
      
-     //Check clocking
+     //Check clockin
      val proto=new iofifosigs(n=n,users=users)
      val pipestages=4
 
-     //This is always at symbol rate, no neet for faster 
-     val rxdsp_inpipe = Seq.fill(neighbours){ 
+     //This is ad rx_enq_rate 
+     val rxdsp_inpipe = Seq.fill(numserdes){ 
         withClockAndReset(io.lanes_rx_deq_clock, io.ctrl_and_clocks.reset_infifo){ 
          Module(new dcpipe(proto.cloneType,latency=pipestages)).io
        } 
      }
 
-     // For TX, the master clock is the slowest,
-     // faster clocks are formed from the system master clock.
-     val txdsp  = withClock(txclkdiv.clkp8n.asClock)(Module (
+     // Master clock is the fastest
+     val txdsp  = Module (
          new  f2_tx_dsp (outputn=rxinputn, n=n, antennas=antennas,
                                            users=users, fifodepth=fifodepth,
                                            progdelay=progdelay,finedelay=finedelay,
-                                           neighbours=neighbours,weightbits=txweightbits)).io
-     )
+                                           neighbours=numserdes,weightbits=txweightbits)).io
     // Pipeline stages to alleviate place and route
      val txpipe = withClock{io.lanes_rx_deq_clock}(Module ( new dcpipe(proto.cloneType,latency=pipestages)).io)
      val dacproto = new dac_io(thermo=thermo,bin=bin)
@@ -290,8 +286,8 @@ class f2_dsp (
      val switchbox = Module (
          new f2_lane_switch (
              proto=proto.cloneType,
-             todspios=neighbours+2,
-             fromdspios=neighbours+2,
+             todspios=2,
+             fromdspios=numserdes+2,
              serdesios=numserdes+2
          )
      ).io
@@ -323,26 +319,32 @@ class f2_dsp (
      rx_ofifo_branch.Bo(0)<>switchbox.from_dsp(0)
      rx_ofifo_branch.Bo(1)<>switchbox.from_serdes(numserdes)
      
-     // Rxdsp neighbour inputs
-     (rxdsp_inpipe,switchbox.to_dsp.slice(1,neighbours+1)).zipped.map(_.enq<>_)
-     (rxdsp_inpipe,rxdsp.iptr_fifo.take(neighbours)).zipped.map(_.deq<>_)
-     //(rxdsp.iptr_fifo.take(neighbours),switchbox.to_dsp.slice(1,neighbours+1)).zipped.map(_<>_)
+     // Rxdsp neighbour inputs connect them to serdes rx
+     val lanes_rx_branch= Seq.fill(numserdes)(Module ( new decouple_branch(proto=proto,n=2)).io)
+     (io.lanes_rx,lanes_rx_branch).zipped.map(_<>_.Ai)
+
+     //Bo(1) connceted to rx_dsp_enighbour pipe
+     //Bo(0) connceted to swithcbox
+     (rxdsp_inpipe,lanes_rx_branch).zipped.map(_.enq<>_.Bo(1))
+     (rxdsp_inpipe,rxdsp.iptr_fifo).zipped.map(_.deq<>_)
 
      // Test input for memory, last indexes
      val serdestest_branch= Module ( new decouple_branch(proto=proto,n=2)).io
      serdestest_branch.Ai<>serdestest.to_serdes
-     serdestest_branch.Bo(0)<>switchbox.from_dsp(neighbours+1)
+     serdestest_branch.Bo(0)<>switchbox.from_dsp(numserdes+1)
      // This enables writing to TX from memory
      serdestest_branch.Bo(1)<>switchbox.from_serdes(numserdes+1)
 
-     serdestest.from_serdes<>switchbox.to_dsp(neighbours+1)
+     val serdestest_pipe = withClock(io.lanes_rx_deq_clock){ Module(new dcpipe(proto.cloneType,latency=pipestages)).io} 
+     serdestest.from_serdes<>serdestest_pipe.deq
+     serdestest_pipe.enq<>switchbox.to_dsp(1)
 
 
      //Connect TX DSP to switchbox
      txpipe.enq<>switchbox.to_dsp(0) 
      txdsp.iptr_A<>txpipe.deq     
      //End index of slice is exclusive
-     (txdsp.optr_neighbours.take(neighbours),switchbox.from_dsp.slice(1,neighbours+1)).zipped.map(_<>_)
+     (txdsp.optr_neighbours,switchbox.from_dsp.slice(1,numserdes+1)).zipped.map(_<>_)
 
      // Add buffer pipes for serdes IO's
      val serdestxpipe = Seq.fill(numserdes){ withClock(io.lanes_tx_enq_clock){ Module(new dcpipe(proto.cloneType,latency=pipestages)).io} }
@@ -350,7 +352,7 @@ class f2_dsp (
      //Connect switchbox to SerDes IO
      (switchbox.to_serdes.take(numserdes),serdestxpipe).zipped.map(_<>_.enq)
      (io.lanes_tx,serdestxpipe).zipped.map(_<>_.deq)
-     (io.lanes_rx,switchbox.from_serdes.take(numserdes)).zipped.map(_<>_)
+     (lanes_rx_branch,switchbox.from_serdes.take(numserdes)).zipped.map(_.Bo(0)<>_)
      //Outputs are ready, althoug floating
      switchbox.to_serdes.slice(numserdes,numserdes+2).map(_.ready:=1.U)
      //switchbox.to_serdes(numserdes).ready:=1.U

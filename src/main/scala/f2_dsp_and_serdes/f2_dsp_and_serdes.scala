@@ -53,7 +53,6 @@ class f2_dsp_and_serdes_io(
         val numserdes          : Int=2,
         val progdelay          : Int=63,
         val finedelay          : Int=31,
-        val neighbours         : Int=4,
         val serdestestmemsize  : Int=scala.math.pow(2,13).toInt
     ) extends Bundle {
         val iptr_A                  = Input(Vec(antennas,DspComplex(SInt(rxinputn.W), SInt(rxinputn.W))))
@@ -93,7 +92,6 @@ class f2_dsp_and_serdes (
         txweightbits: Int=10,
         fifodepth  : Int=16,
         numserdes  : Int=6,
-        neighbours : Int=4,
         progdelay  : Int=63,
         finedelay  : Int=31,
         serdestestmemsize : Int=scala.math.pow(2,13).toInt
@@ -150,7 +148,6 @@ class f2_dsp_and_serdes (
         txweightbits      = txweightbits      ,
         fifodepth         = fifodepth         ,
         numserdes         = numserdes         ,
-        neighbours        = neighbours        ,
         progdelay         = progdelay         ,
         finedelay         = finedelay         ,
         serdestestmemsize = serdestestmemsize
