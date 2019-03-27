@@ -126,14 +126,16 @@ class f2_dsp_and_serdes (
         ).io}   
 
     // clock divider
-    val lane_clock_div = Module ( new clkdiv_n_2_4_8 ( n=8) ).io //This clock is to provide programmable dequeue clock 
+    //This clock is to provide programmable dequeue clock 
+    val lane_clock_div = Module ( new clkdiv_n_2_4_8 ( n=8) ).io 
     lane_clock_div.Ndiv     :=io.lane_clock_Ndiv
     lane_clock_div.reset_clk:=io.lane_clock_reset
     lane_clock_div.shift    :=io.lane_clock_shift
 
 
     // RX:s
-    // Vec is required to do runtime adressing of an array i.e. Seq is not hardware structure
+    // Vec is required to do runtime adressing of an array i.e. 
+    // Seq is not hardware structure
     // Clock of the RX is at the highest frequency
     val dsp = Module ( new  f2_dsp (
         rxinputn          = rxinputn          ,
@@ -220,25 +222,62 @@ class f2_dsp_and_serdes (
     val lane_debugio      = lanes.map(_.debugio.map(_.map(iomap)))
 
     (lanes, lane_ssio).zipped.foreach { case (lane, ssio) =>
-      syncControlIO(lane.ssio.get,         ssio.get,         lane.io.rxClock, lane.io.rxReset, lane.io.txClock, lane.io.txReset)
+      syncControlIO(
+          lane.ssio.get,
+          ssio.get,         
+          lane.io.rxClock, 
+          lane.io.rxReset, 
+          lane.io.txClock, 
+          lane.io.txReset
+      )
     }
     (lanes, lane_encoderio).zipped.foreach { case (lane, encoderio) =>
       (lane.encoderio, encoderio) match {
         case (Some(l), Some(e)) => 
-          syncControlIO(l, e, lane.io.rxClock, lane.io.rxReset, lane.io.txClock, lane.io.txReset)
+          syncControlIO(
+              l, 
+              e, 
+              lane.io.rxClock, 
+              lane.io.rxReset, 
+              lane.io.txClock, 
+              lane.io.txReset
+          )
         case (None, None) =>
-        case _ => throw new Exception(s"Encoder IO has invalid state: ${lane.encoderio} should be ${encoderio}")
+        case _ => throw new Exception(
+            s"Encoder IO has invalid state: ${lane.encoderio} should be ${encoderio}"
+        )
       }
     }
     (lanes, lane_decoderio).zipped.foreach { case (lane, decoderio) =>
-      syncControlIO(lane.decoderio.get,    decoderio.get,    lane.io.rxClock, lane.io.rxReset, lane.io.txClock, lane.io.txReset)
+      syncControlIO(
+          lane.decoderio.get,
+          decoderio.get,    
+          lane.io.rxClock, 
+          lane.io.rxReset, 
+          lane.io.txClock, 
+          lane.io.txReset
+      )
     }
     (lanes, lane_packetizerio).zipped.foreach { case (lane, packetizerio) =>
-      syncControlIO(lane.packetizerio.get, packetizerio.get, lane.io.rxClock, lane.io.rxReset, lane.io.txClock, lane.io.txReset)
+      syncControlIO(
+          lane.packetizerio.get,
+          packetizerio.get, 
+          lane.io.rxClock, 
+          lane.io.rxReset, 
+          lane.io.txClock, 
+          lane.io.txReset
+      )
     }
     (lanes, lane_debugio).zipped.foreach { case (lane, debugio) =>
       (lane.debugio, debugio).zipped.foreach { case (l, d) =>
-        syncControlIO(l.get, d.get, lane.io.rxClock, lane.io.rxReset, lane.io.txClock, lane.io.txReset)
+        syncControlIO(
+            l.get, 
+            d.get, 
+            lane.io.rxClock, 
+            lane.io.rxReset, 
+            lane.io.txClock, 
+            lane.io.txReset
+        )
       }
     }
     // .get is used because the io's are Options, not Seq

@@ -88,6 +88,10 @@ class f2_dsp_ctrl_io(
     val tx_reset_clkdiv         = Input(Bool())
     val tx_clkdiv_shift         = Input(UInt(2.W))
     val interpolator_controls   = Vec(antennas,new f2_interpolator_controls(resolution=resolution,gainbits=10))
+    val bypass_Ndiv             = Input(UInt(8.W))
+    val bypass_reset_clkdiv     = Input(Bool())
+    val bypass_clkdiv_shift     = Input(UInt(2.W))
+
 }
 
 class f2_dsp_io(
@@ -180,6 +184,11 @@ class f2_dsp (
      rxclkdiv.reset_clk:=io.ctrl_and_clocks.rx_reset_clkdiv
      rxclkdiv.shift:=io.ctrl_and_clocks.rx_clkdiv_shift
 
+     val bypassclkdiv = Module ( new clkdiv_n_2_4_8 ( n=8)).io
+     bypassclkdiv.Ndiv:=io.ctrl_and_clocks.bypass_Ndiv
+     bypassclkdiv.reset_clk:=io.ctrl_and_clocks.bypass_reset_clkdiv
+     bypassclkdiv.shift:=io.ctrl_and_clocks.bypass_clkdiv_shift
+
      val txclkdiv = Module ( new clkdiv_n_2_4_8 ( n=8)).io
      txclkdiv.Ndiv:=io.ctrl_and_clocks.tx_Ndiv
      txclkdiv.reset_clk:=io.ctrl_and_clocks.tx_reset_clkdiv
@@ -193,16 +202,10 @@ class f2_dsp (
                                              progdelay=progdelay,finedelay=finedelay,
                                              neighbours=numserdes)).io
      
-     //Check clockin
+     //Check clocking
      val proto=new iofifosigs(n=n,users=users)
      val pipestages=4
 
-     //This is ad rx_enq_rate 
-     val rxdsp_inpipe = Seq.fill(numserdes){ 
-        withClockAndReset(io.lanes_rx_deq_clock, io.ctrl_and_clocks.reset_infifo){ 
-         Module(new dcpipe(proto.cloneType,latency=pipestages)).io
-       } 
-     }
 
      // Master clock is the fastest
      val txdsp  = Module (
@@ -211,9 +214,8 @@ class f2_dsp (
                                            progdelay=progdelay,finedelay=finedelay,
                                            neighbours=numserdes,weightbits=txweightbits)).io
     // Pipeline stages to alleviate place and route
-     val txpipe = withClock{io.lanes_rx_deq_clock}(Module ( new dcpipe(proto.cloneType,latency=pipestages)).io)
-     val dacproto = new dac_io(thermo=thermo,bin=bin)
      val aint=(0 until antennas ).toList
+     val dacproto = new dac_io(thermo=thermo,bin=bin)
      val dacpipe = aint.map{index => 
         withClockAndReset(io.ctrl_and_clocks.dac_clocks(index), 
             io.ctrl_and_clocks.reset_dacfifo){ 
@@ -230,7 +232,8 @@ class f2_dsp (
      rxdsp.decimator_clocks.hb2clock_low :=rxclkdiv.clkp4n.asClock
      rxdsp.decimator_clocks.hb3clock_low :=rxclkdiv.clkp8n.asClock
      rxdsp.clock_symrate                 :=rxclkdiv.clkp8n.asClock
-     rxdsp.clock_symratex4               :=rxclkdiv.clkp2n.asClock
+     rxdsp.bypass_clock                  :=bypassclkdiv.clkpn.asClock
+     rxdsp.bypass_Ndiv                   :=io.ctrl_and_clocks.bypass_Ndiv
      rxdsp.clock_infifo_enq:=io.lanes_rx_deq_clock   
      rxdsp.clock_outfifo_deq:=io.lanes_tx_enq_clock   //Should be faster than 5xsymrate
                                                       // If we support serialization
@@ -264,6 +267,8 @@ class f2_dsp (
      txdsp.interpolator_clocks.hb1clock_high   := txclkdiv.clkp4n.asClock
      txdsp.interpolator_clocks.hb1clock_low    := txclkdiv.clkp8n.asClock
      txdsp.clock_symrate                       := txclkdiv.clkp8n.asClock
+     txdsp.bypass_clock                        :=bypassclkdiv.clkpn.asClock
+     txdsp.bypass_Ndiv                         :=io.ctrl_and_clocks.bypass_Ndiv
      txdsp.interpolator_controls <> io.ctrl_and_clocks.interpolator_controls
      txdsp.dac_clocks         <> io.ctrl_and_clocks.dac_clocks
      txdsp.reset_dacfifo      <> io.ctrl_and_clocks.reset_dacfifo
@@ -323,10 +328,9 @@ class f2_dsp (
      val lanes_rx_branch= Seq.fill(numserdes)(Module ( new decouple_branch(proto=proto,n=2)).io)
      (io.lanes_rx,lanes_rx_branch).zipped.map(_<>_.Ai)
 
-     //Bo(1) connceted to rx_dsp_enighbour pipe
+     //Bo(1) connceted to rx_dsp_neighbours
      //Bo(0) connceted to swithcbox
-     (rxdsp_inpipe,lanes_rx_branch).zipped.map(_.enq<>_.Bo(1))
-     (rxdsp_inpipe,rxdsp.iptr_fifo).zipped.map(_.deq<>_)
+     (lanes_rx_branch,rxdsp.iptr_fifo).zipped.map(_.Bo(1)<>_)
 
      // Test input for memory, last indexes
      val serdestest_branch= Module ( new decouple_branch(proto=proto,n=2)).io
@@ -334,24 +338,16 @@ class f2_dsp (
      serdestest_branch.Bo(0)<>switchbox.from_dsp(numserdes+1)
      // This enables writing to TX from memory
      serdestest_branch.Bo(1)<>switchbox.from_serdes(numserdes+1)
-
-     val serdestest_pipe = withClock(io.lanes_rx_deq_clock){ Module(new dcpipe(proto.cloneType,latency=pipestages)).io} 
-     serdestest.from_serdes<>serdestest_pipe.deq
-     serdestest_pipe.enq<>switchbox.to_dsp(1)
-
+     serdestest.from_serdes<>switchbox.to_dsp(1)
 
      //Connect TX DSP to switchbox
-     txpipe.enq<>switchbox.to_dsp(0) 
-     txdsp.iptr_A<>txpipe.deq     
+     txdsp.iptr_A<>switchbox.to_dsp(0) 
      //End index of slice is exclusive
      (txdsp.optr_neighbours,switchbox.from_dsp.slice(1,numserdes+1)).zipped.map(_<>_)
 
-     // Add buffer pipes for serdes IO's
-     val serdestxpipe = Seq.fill(numserdes){ withClock(io.lanes_tx_enq_clock){ Module(new dcpipe(proto.cloneType,latency=pipestages)).io} }
 
      //Connect switchbox to SerDes IO
-     (switchbox.to_serdes.take(numserdes),serdestxpipe).zipped.map(_<>_.enq)
-     (io.lanes_tx,serdestxpipe).zipped.map(_<>_.deq)
+     (switchbox.to_serdes.take(numserdes),io.lanes_tx).zipped.map(_<>_)
      (lanes_rx_branch,switchbox.from_serdes.take(numserdes)).zipped.map(_.Bo(0)<>_)
      //Outputs are ready, althoug floating
      switchbox.to_serdes.slice(numserdes,numserdes+2).map(_.ready:=1.U)
