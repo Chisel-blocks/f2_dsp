@@ -205,14 +205,13 @@ class f2_dsp (
      //Check clocking
      val proto=new iofifosigs(n=n,users=users)
      val pipestages=4
-
-
      // Master clock is the fastest
      val txdsp  = Module (
          new  f2_tx_dsp (outputn=rxinputn, n=n, antennas=antennas,
                                            users=users, fifodepth=fifodepth,
                                            progdelay=progdelay,finedelay=finedelay,
                                            neighbours=numserdes,weightbits=txweightbits)).io
+    
     // Pipeline stages to alleviate place and route
      val aint=(0 until antennas ).toList
      val dacproto = new dac_io(thermo=thermo,bin=bin)
@@ -223,7 +222,6 @@ class f2_dsp (
        } 
      }
      dacpipe.map(_.enq.valid:=true.B)
-
 
      //Map io inputs
      //Rx
