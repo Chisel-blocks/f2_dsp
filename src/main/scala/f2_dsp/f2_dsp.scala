@@ -184,15 +184,15 @@ class f2_dsp (
      rxclkdiv.reset_clk:=io.ctrl_and_clocks.rx_reset_clkdiv
      rxclkdiv.shift:=io.ctrl_and_clocks.rx_clkdiv_shift
 
-     val bypassclkdiv = Module ( new clkdiv_n_2_4_8 ( n=8)).io
-     bypassclkdiv.Ndiv:=io.ctrl_and_clocks.bypass_Ndiv
-     bypassclkdiv.reset_clk:=io.ctrl_and_clocks.bypass_reset_clkdiv
-     bypassclkdiv.shift:=io.ctrl_and_clocks.bypass_clkdiv_shift
-
      val txclkdiv = Module ( new clkdiv_n_2_4_8 ( n=8)).io
      txclkdiv.Ndiv:=io.ctrl_and_clocks.tx_Ndiv
      txclkdiv.reset_clk:=io.ctrl_and_clocks.tx_reset_clkdiv
      txclkdiv.shift:=io.ctrl_and_clocks.tx_clkdiv_shift
+
+     val bypassclkdiv = Module ( new clkdiv_n_2_4_8 ( n=8)).io
+     bypassclkdiv.Ndiv:=io.ctrl_and_clocks.bypass_Ndiv
+     bypassclkdiv.reset_clk:=io.ctrl_and_clocks.bypass_reset_clkdiv
+     bypassclkdiv.shift:=io.ctrl_and_clocks.bypass_clkdiv_shift
 
      // RX:s
      // Vec is required to do runtime adressing of an array i.e. Seq is not hardware structure
