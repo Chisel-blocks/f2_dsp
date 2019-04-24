@@ -1,0 +1,12 @@
+[submodule "f2_rx_dsp"]
+	path = f2_rx_dsp
+	url = git@bwrcrepo.eecs.berkeley.edu:fader2/chisel/f2_rx_dsp.git
+[submodule "f2_tx_dsp"]
+	path = f2_tx_dsp
+	url = git@bwrcrepo.eecs.berkeley.edu:fader2/chisel/f2_tx_dsp.git
+[submodule "f2_lane_switch"]
+	path = f2_lane_switch
+	url = git@bwrcrepo.eecs.berkeley.edu:fader2/chisel/f2_lane_switch.git
+[submodule "f2_serdes_test"]
+	path = f2_serdes_test
+	url = git@bwrcrepo.eecs.berkeley.edu:fader2/chisel/f2_serdes_test.git
