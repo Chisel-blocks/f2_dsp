@@ -96,7 +96,6 @@ libraryDependencies += "edu.berkeley.cs" %% "f2_tx_dsp" % gitSubmoduleHashSnapsh
 libraryDependencies += "edu.berkeley.cs" %% "decouple_branch" % gitSubmoduleHashSnapshotVersion("decouple_branch")
 libraryDependencies += "edu.berkeley.cs" %% "f2_lane_switch" % gitSubmoduleHashSnapshotVersion("f2_lane_switch")
 libraryDependencies += "edu.berkeley.cs" %% "f2_serdes_test" % gitSubmoduleHashSnapshotVersion("f2_serdes_test")
-libraryDependencies += "edu.berkeley.cs" %% "f2_cm_serdes_lane" % gitSubmoduleHashSnapshotVersion("f2_cm_serdes_lane")
 libraryDependencies += "edu.berkeley.cs" %% "clkdiv_n_2_4_8" % gitSubmoduleHashSnapshotVersion("clkdiv_n_2_4_8")
 libraryDependencies += "edu.berkeley.cs" %% "f2_signal_definitions" % gitSubmoduleHashSnapshotVersion("f2_signal_definitions")
 
