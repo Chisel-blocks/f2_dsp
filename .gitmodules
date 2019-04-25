@@ -10,3 +10,6 @@
 [submodule "f2_serdes_test"]
 	path = f2_serdes_test
 	url = git@bwrcrepo.eecs.berkeley.edu:fader2/chisel/f2_serdes_test.git
+[submodule "decouple_branch"]
+	path = decouple_branch
+	url = git@bwrcrepo.eecs.berkeley.edu:fader2/chisel/decouple_branch.git
