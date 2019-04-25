@@ -24,7 +24,6 @@ SUBMODULES="\
     clkdiv_n_2_4_8 \
     f2_lane_switch \
     f2_serdes_test \
-    f2_cm_serdes_lane \
     f2_rx_dsp \
     f2_tx_dsp \
     " 
