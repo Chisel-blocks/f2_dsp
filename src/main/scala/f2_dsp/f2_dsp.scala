@@ -7,10 +7,11 @@ import chisel3.util._
 import chisel3.experimental._
 import dsptools._
 import dsptools.numbers._
-import freechips.rocketchip.util._
+//import freechips.rocketchip.util._
+// needed for controls
 import f2_decimator._
 import f2_interpolator._
-import f2_rx_path._
+import f2_signal_definitions.{usersigs, iofifosigs}
 import f2_lane_switch._
 import f2_cm_serdes_lane._
 import f2_rx_dsp._

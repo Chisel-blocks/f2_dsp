@@ -13,3 +13,6 @@
 [submodule "decouple_branch"]
 	path = decouple_branch
 	url = git@bwrcrepo.eecs.berkeley.edu:fader2/chisel/decouple_branch.git
+[submodule "f2_cm_serdes_lane"]
+	path = f2_cm_serdes_lane
+	url = git@bwrcrepo.eecs.berkeley.edu:fader2/chisel/f2_cm_serdes_lane.git
