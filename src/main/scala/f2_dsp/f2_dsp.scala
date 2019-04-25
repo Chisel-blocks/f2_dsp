@@ -13,7 +13,7 @@ import f2_decimator._
 import f2_interpolator._
 import f2_signal_definitions.{usersigs, iofifosigs}
 import f2_lane_switch._
-import f2_cm_serdes_lane._
+//import f2_cm_serdes_lane._
 import f2_rx_dsp._
 import f2_tx_dsp._
 import f2_tx_path._
