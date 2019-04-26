@@ -61,9 +61,9 @@ resolvers += "Sonatype Releases" at "https://oss.sonatype.org/content/repositori
 // Provide a managed dependency on X if -DXVersion="" is supplied on the command line.
 // [TODO] is simpler clearer?
 val defaultVersions = Map(
-  "chisel3" -> "3.2-SNAPSHOT",
-  "chisel-iotesters" -> "1.2.5",
-  "dsptools" -> "1.1.4"
+  "chisel3" -> "3.1.7",
+  "chisel-iotesters" -> "1.2.9",
+  "dsptools" -> "1.1.8"
   )
 
 libraryDependencies ++= (Seq("chisel3","chisel-iotesters","dsptools").map {
@@ -90,7 +90,7 @@ libraryDependencies  ++= Seq(
 
 // Some common deps in BWRC projects, select if needed
 // TODO-how to figure out what version is the current and the best?
-libraryDependencies += "edu.berkeley.cs" %% "dsptools" % "1.1-SNAPSHOT"
+//libraryDependencies += "edu.berkeley.cs" %% "dsptools" % "1.1-SNAPSHOT"
 libraryDependencies += "edu.berkeley.cs" %% "f2_rx_dsp" % gitSubmoduleHashSnapshotVersion("f2_rx_dsp")
 libraryDependencies += "edu.berkeley.cs" %% "f2_tx_dsp" % gitSubmoduleHashSnapshotVersion("f2_tx_dsp")
 libraryDependencies += "edu.berkeley.cs" %% "decouple_branch" % gitSubmoduleHashSnapshotVersion("decouple_branch")
