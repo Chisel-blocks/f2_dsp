@@ -13,3 +13,6 @@
 [submodule "decouple_branch"]
 	path = decouple_branch
 	url = git@bwrcrepo.eecs.berkeley.edu:fader2/chisel/decouple_branch.git
+[submodule "clkdiv_n_2_4_8"]
+	path = clkdiv_n_2_4_8
+	url = git@github.com:Chisel-blocks/clkdiv_n_2_4_8.git
